@@ -41,8 +41,22 @@ vi.mock('react-admin', async (importOriginal) => {
 })
 
 const songs = {
-  'song-1': { id: 'song-1', title: 'First Song', artist: 'Artist One' },
-  'song-2': { id: 'song-2', title: 'Second Song', artist: 'Artist Two' },
+  'song-1': {
+    id: 'song-1',
+    title: 'First Song',
+    artist: 'Artist One',
+    album: 'First Album',
+    duration: 180,
+    updatedAt: '2026-08-21T00:00:00Z',
+  },
+  'song-2': {
+    id: 'song-2',
+    title: 'Second Song',
+    artist: 'Artist Two',
+    album: 'Second Album',
+    duration: 240,
+    updatedAt: '2026-08-21T00:00:00Z',
+  },
 }
 
 const previewResponse = (overrides = {}) => ({
@@ -69,16 +83,40 @@ const renderButton = (filters = {}) =>
 const openPreview = () =>
   fireEvent.click(screen.getByRole('button', { name: /shuffle library/i }))
 
+const setMediaQueries = ({ mobile = false, reducedMotion = false } = {}) => {
+  Object.defineProperty(window, 'matchMedia', {
+    configurable: true,
+    writable: true,
+    value: vi.fn((query) => ({
+      matches:
+        (mobile && query.includes('max-width')) ||
+        (reducedMotion && query.includes('prefers-reduced-motion')),
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  })
+}
+
 describe('ShuffleAllButton', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    setMediaQueries()
     vi.spyOn(window.crypto, 'randomUUID').mockReturnValue('stable-ui-seed')
+    localStorage.setItem('username', 'listener')
+    localStorage.setItem('subsonic-token', 'token')
+    localStorage.setItem('subsonic-salt', 'salt')
     mockHttpClient.mockResolvedValue(previewResponse())
     mockGetMany.mockResolvedValue({ data: [songs['song-1'], songs['song-2']] })
   })
 
   afterEach(() => {
     vi.restoreAllMocks()
+    localStorage.clear()
   })
 
   it('previews in API order and changes playback only after confirmation', async () => {
@@ -109,8 +147,15 @@ describe('ShuffleAllButton', () => {
     })
     const items = within(list).getAllByRole('listitem')
     expect(items[0]).toHaveTextContent('Second Song')
+    expect(items[0]).toHaveTextContent('Artist Two · Second Album')
     expect(items[1]).toHaveTextContent('First Song')
-    expect(items[0]).toHaveTextContent('Seeded library shuffle')
+    expect(items[0]).not.toHaveTextContent('Seeded library shuffle')
+    expect(screen.getAllByText('Seeded library shuffle')).toHaveLength(1)
+    expect(screen.getByText(/2 tracks · 07:00/)).toBeInTheDocument()
+    expect(within(items[0]).getByRole('img')).toHaveAttribute(
+      'src',
+      expect.stringContaining('mf-song-2'),
+    )
 
     fireEvent.click(screen.getByTestId('confirm-shuffle-preview'))
 
@@ -147,6 +192,59 @@ describe('ShuffleAllButton', () => {
     expect(mockGetMany).not.toHaveBeenCalled()
     expect(mockDispatch).not.toHaveBeenCalled()
     expect(mockNotify).not.toHaveBeenCalled()
+  })
+
+  it('reserves the preview geometry while the initial request loads', async () => {
+    mockHttpClient.mockReturnValue(new Promise(() => {}))
+    renderButton()
+    openPreview()
+
+    expect(await screen.findByRole('dialog')).toHaveAttribute(
+      'aria-labelledby',
+      'shuffle-preview-title',
+    )
+    expect(screen.getAllByTestId('preview-skeleton-row')).toHaveLength(10)
+    expect(screen.getByTestId('confirm-shuffle-preview')).toBeDisabled()
+    expect(screen.getByRole('status', { name: 'Loading' })).toBeInTheDocument()
+  })
+
+  it('keeps a valid preview playable when trying another shuffle fails', async () => {
+    mockHttpClient
+      .mockResolvedValueOnce(previewResponse())
+      .mockRejectedValueOnce(new Error('retry unavailable'))
+    renderButton()
+    openPreview()
+
+    const list = await screen.findByRole('list', {
+      name: 'shuffle-preview-tracks',
+    })
+    fireEvent.click(screen.getByRole('button', { name: /try another/i }))
+
+    await waitFor(() => expect(mockNotify).toHaveBeenCalledTimes(1))
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    expect(list).toHaveTextContent('Second Song')
+    expect(mockDispatch).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByTestId('confirm-shuffle-preview'))
+    expect(mockDispatch).toHaveBeenCalledTimes(1)
+    expect(Object.keys(mockDispatch.mock.calls[0][0].data)).toEqual([
+      'song-2',
+      'song-1',
+    ])
+  })
+
+  it('uses a full-screen, immediate-transition dialog when requested', async () => {
+    setMediaQueries({ mobile: true, reducedMotion: true })
+    renderButton()
+    openPreview()
+
+    const dialog = await screen.findByRole('dialog')
+    expect(dialog).toHaveClass('MuiDialog-paperFullScreen')
+    await screen.findByRole('list', { name: 'shuffle-preview-tracks' })
+    fireEvent.click(screen.getByRole('button', { name: /cancel/i }))
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    )
   })
 
   it('notifies and preserves playback when the preview request fails', async () => {
