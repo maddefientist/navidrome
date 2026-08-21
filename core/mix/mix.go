@@ -45,10 +45,10 @@ type ReasonCode string
 
 // MixSpec is the stable input contract for mix generation.
 type MixSpec struct {
-	Mode          Mode
-	Seed          string
-	Limit         int
-	ArtistSpacing int
+	Mode          Mode   `json:"mode"`
+	Seed          string `json:"seed"`
+	Limit         int    `json:"limit"`
+	ArtistSpacing int    `json:"artistSpacing"`
 }
 
 // Candidate is a caller-scoped, already access-checked media item.
@@ -60,15 +60,15 @@ type Candidate struct {
 
 // Entry is one inspectable track in a generated mix.
 type Entry struct {
-	ID     string
-	Reason ReasonCode
+	ID     string     `json:"id"`
+	Reason ReasonCode `json:"reason"`
 }
 
 // MixResult is the stable output contract for mix generation.
 type MixResult struct {
-	Entries      []Entry
-	Degraded     bool
-	Degradations []string
+	Entries      []Entry  `json:"entries"`
+	Degraded     bool     `json:"degraded"`
+	Degradations []string `json:"degradations"`
 }
 
 // Engine generates mixes from a caller-scoped candidate pool.
@@ -79,11 +79,17 @@ func NewEngine() *Engine {
 	return &Engine{}
 }
 
+// Validate checks whether a mix specification can be generated without
+// inspecting or loading a candidate pool.
+func (e *Engine) Validate(spec MixSpec) error {
+	return validateSpec(spec)
+}
+
 // Generate builds a pure_shuffle mix from spec and candidates.
 // The input slice is never mutated. Identical seed and logical candidate set
 // (unique playable IDs) produce identical ordered IDs regardless of input order.
 func (e *Engine) Generate(spec MixSpec, candidates []Candidate) (MixResult, error) {
-	if err := validateSpec(spec); err != nil {
+	if err := e.Validate(spec); err != nil {
 		return MixResult{}, err
 	}
 
