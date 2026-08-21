@@ -155,7 +155,7 @@ var _ = Describe("POST /mix/preview", func() {
 		router.ServeHTTP(w, createAuthenticatedRequest(validBody()))
 
 		Expect(w.Code).To(Equal(http.StatusOK))
-		Expect(mfRepo.Options.Filters).To(Equal(squirrel.Eq{"missing": false}))
+		Expect(mfRepo.Options.Filters).To(Equal(squirrel.And{squirrel.Eq{"missing": false}}))
 
 		var got mix.MixResult
 		Expect(json.Unmarshal(w.Body.Bytes(), &got)).To(Succeed())
@@ -199,7 +199,27 @@ var _ = Describe("POST /mix/preview", func() {
 		Entry("limit too small", mix.MixSpec{Mode: mix.ModePureShuffle, Seed: "repeatable", Limit: 0}),
 		Entry("limit too large", mix.MixSpec{Mode: mix.ModePureShuffle, Seed: "repeatable", Limit: mix.MaxLimit + 1}),
 		Entry("unsupported mode", mix.MixSpec{Mode: "instant_mix", Seed: "repeatable", Limit: 2}),
+		Entry("invalid library id", mix.MixSpec{Mode: mix.ModePureShuffle, Seed: "repeatable", Limit: 2, LibraryIDs: []int{-1}}),
 	)
+
+	It("constrains the preview to requested libraries", func() {
+		body, err := json.Marshal(mix.MixSpec{
+			Mode:       mix.ModePureShuffle,
+			Seed:       "repeatable",
+			Limit:      2,
+			LibraryIDs: []int{2, 4},
+		})
+		Expect(err).ToNot(HaveOccurred())
+
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, createAuthenticatedRequest(body))
+
+		Expect(w.Code).To(Equal(http.StatusOK))
+		Expect(mfRepo.Options.Filters).To(Equal(squirrel.And{
+			squirrel.Eq{"missing": false},
+			squirrel.Eq{"library_id": []int{2, 4}},
+		}))
+	})
 
 	It("validates the spec before loading the library", func() {
 		mfRepo.SetError(true)

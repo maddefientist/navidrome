@@ -30,9 +30,11 @@ func (api *Router) previewMix(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	files, err := api.ds.MediaFile(r.Context()).GetAll(model.QueryOptions{
-		Filters: squirrel.Eq{"missing": false},
-	})
+	filters := squirrel.And{squirrel.Eq{"missing": false}}
+	if len(spec.LibraryIDs) > 0 {
+		filters = append(filters, squirrel.Eq{"library_id": spec.LibraryIDs})
+	}
+	files, err := api.ds.MediaFile(r.Context()).GetAll(model.QueryOptions{Filters: filters})
 	if err != nil {
 		log.Error(r.Context(), "Error loading mix candidates", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)

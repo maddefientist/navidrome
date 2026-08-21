@@ -43,6 +43,21 @@ func TestGenerateValidation(t *testing.T) {
 			wantErr: ErrUnsupportedMode,
 		},
 		{
+			name:    "non-positive library id",
+			spec:    MixSpec{Mode: ModePureShuffle, Seed: "seed", Limit: 10, LibraryIDs: []int{0}},
+			wantErr: ErrInvalidLibraryIDs,
+		},
+		{
+			name: "too many library ids",
+			spec: MixSpec{
+				Mode:       ModePureShuffle,
+				Seed:       "seed",
+				Limit:      10,
+				LibraryIDs: make([]int, MaxLibraryIDs+1),
+			},
+			wantErr: ErrInvalidLibraryIDs,
+		},
+		{
 			name:    "empty mode",
 			spec:    MixSpec{Mode: "", Seed: "seed", Limit: 10},
 			wantErr: ErrUnsupportedMode,

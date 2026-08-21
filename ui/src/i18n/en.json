@@ -48,10 +48,22 @@
         "addToPlaylist": "Add to Playlist",
         "showInPlaylist": "Show in Playlist",
         "shuffleAll": "Shuffle All",
+        "shuffleLibrary": "Shuffle Library",
         "download": "Download",
         "playNext": "Play Next",
         "info": "Get Info",
         "instantMix": "Instant Mix"
+      },
+      "mix": {
+        "previewTitle": "Preview Library Shuffle",
+        "ready": "%{count} tracks ready. Your current queue will not change until you confirm.",
+        "degraded": "Some spacing or availability preferences could not be fully maintained.",
+        "reason": {
+          "library_shuffle": "Seeded library shuffle"
+        },
+        "moreTracks": "and %{count} more",
+        "tryAnother": "Try Another",
+        "play": "Play This Shuffle"
       }
     },
     "album": {

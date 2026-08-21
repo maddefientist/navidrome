@@ -16,6 +16,8 @@ const (
 	MinLimit = 1
 	// MaxLimit is the largest number of tracks a mix may request.
 	MaxLimit = 500
+	// MaxLibraryIDs bounds caller-provided library selection filters.
+	MaxLibraryIDs = 100
 
 	// ModePureShuffle is unbiased local random selection with a reproducibility seed.
 	ModePureShuffle Mode = "pure_shuffle"
@@ -35,6 +37,8 @@ var (
 	ErrEmptySeed = errors.New("mix: seed must be non-empty")
 	// ErrUnsupportedMode is returned when MixSpec.Mode is not implemented.
 	ErrUnsupportedMode = errors.New("mix: unsupported mode")
+	// ErrInvalidLibraryIDs is returned for non-positive or excessive library IDs.
+	ErrInvalidLibraryIDs = errors.New("mix: library IDs must be positive and contain at most 100 entries")
 )
 
 // Mode identifies a mix generation strategy.
@@ -49,6 +53,7 @@ type MixSpec struct {
 	Seed          string `json:"seed"`
 	Limit         int    `json:"limit"`
 	ArtistSpacing int    `json:"artistSpacing"`
+	LibraryIDs    []int  `json:"libraryIds,omitempty"`
 }
 
 // Candidate is a caller-scoped, already access-checked media item.
@@ -119,6 +124,14 @@ func validateSpec(spec MixSpec) error {
 	}
 	if spec.Limit < MinLimit || spec.Limit > MaxLimit {
 		return ErrInvalidLimit
+	}
+	if len(spec.LibraryIDs) > MaxLibraryIDs {
+		return ErrInvalidLibraryIDs
+	}
+	for _, id := range spec.LibraryIDs {
+		if id <= 0 {
+			return ErrInvalidLibraryIDs
+		}
 	}
 	return nil
 }
