@@ -10,7 +10,7 @@ import {
 import { TestContext } from 'ra-test'
 import { ThemeProvider, createTheme } from '@material-ui/core/styles'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ShuffleAllButton } from './ShuffleAllButton'
+import { createShuffleSeed, ShuffleAllButton } from './ShuffleAllButton'
 
 const mockDispatch = vi.fn()
 const mockGetMany = vi.fn()
@@ -117,6 +117,20 @@ describe('ShuffleAllButton', () => {
   afterEach(() => {
     vi.restoreAllMocks()
     localStorage.clear()
+  })
+
+  it('creates a usable seed when Web Crypto is unavailable on a LAN origin', () => {
+    const fallbackInputs = {
+      now: () => 1724300000000,
+      random: () => 0.25,
+    }
+
+    expect(createShuffleSeed({ cryptoProvider: null, ...fallbackInputs })).toBe(
+      'shuffle-m04rp728-9',
+    )
+    expect(createShuffleSeed({ cryptoProvider: {}, ...fallbackInputs })).toBe(
+      'shuffle-m04rp728-9',
+    )
   })
 
   it('previews in API order and changes playback only after confirmation', async () => {
