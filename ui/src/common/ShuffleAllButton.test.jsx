@@ -10,7 +10,8 @@ import {
 import { TestContext } from 'ra-test'
 import { ThemeProvider, createTheme } from '@material-ui/core/styles'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createShuffleSeed, ShuffleAllButton } from './ShuffleAllButton'
+import { ShuffleAllButton } from './ShuffleAllButton'
+import { createShuffleSeed } from './shuffleSeed'
 
 const mockDispatch = vi.fn()
 const mockGetMany = vi.fn()
