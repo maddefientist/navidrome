@@ -24,6 +24,7 @@ import library from './library'
 import plugin from './plugin'
 import { Player } from './audioplayer'
 import customRoutes from './routes'
+import { ListenNow } from './home'
 import {
   libraryReducer,
   themeReducer,
@@ -117,6 +118,7 @@ const Admin = (props) => {
       authProvider={authProvider}
       i18nProvider={i18nProvider}
       customRoutes={customRoutes}
+      dashboard={ListenNow}
       history={history}
       layout={Layout}
       loginPage={Login}

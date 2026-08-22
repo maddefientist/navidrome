@@ -27,6 +27,31 @@ const useStyle = makeStyles(
     },
     player: {
       display: (props) => (props.visible ? 'block' : 'none'),
+      '& .music-player-panel': {
+        left: '0 !important',
+        right: '0 !important',
+        bottom: '0 !important',
+        width: '100% !important',
+        maxWidth: '100% !important',
+        zIndex: '1200 !important',
+        borderRadius: '0 !important',
+        border: 'none !important',
+        boxShadow: `0 -12px 32px ${
+          theme.palette.type === 'dark'
+            ? 'rgba(0, 0, 0, 0.38)'
+            : 'rgba(15, 23, 42, 0.12)'
+        } !important`,
+        background:
+          theme.palette.type === 'dark'
+            ? 'linear-gradient(180deg, rgba(22,26,33,0.96) 0%, rgba(14,16,20,0.98) 100%)'
+            : theme.palette.background.paper,
+        backdropFilter: 'blur(18px)',
+        borderTop: `1px solid ${
+          theme.palette.type === 'dark'
+            ? 'rgba(255,255,255,0.08)'
+            : 'rgba(0,0,0,0.08)'
+        }`,
+      },
       '@media screen and (max-width:810px)': {
         '& .sound-operation': {
           display: 'none',

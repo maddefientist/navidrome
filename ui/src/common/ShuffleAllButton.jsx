@@ -133,6 +133,10 @@ const useStyles = makeStyles((theme) => ({
       marginTop: theme.spacing(1),
     },
   },
+  trigger: {
+    minHeight: 48,
+    minWidth: 48,
+  },
 }))
 
 export const createShuffleSeed = ({
@@ -171,7 +175,7 @@ const previewSpec = (filters) => {
   }
 }
 
-export const ShuffleAllButton = ({ filters }) => {
+export const ShuffleAllButton = ({ filters, className }) => {
   const classes = useStyles()
   const theme = useTheme()
   const fullScreen = useMediaQuery(theme.breakpoints.down('xs'))
@@ -301,6 +305,9 @@ export const ShuffleAllButton = ({ filters }) => {
   return (
     <>
       <AdminButton
+        className={
+          className ? `${classes.trigger} ${className}` : classes.trigger
+        }
         onClick={loadPreview}
         label={translate('resources.song.actions.shuffleLibrary', {
           _: 'Shuffle library',
@@ -458,6 +465,7 @@ export const ShuffleAllButton = ({ filters }) => {
 
 ShuffleAllButton.propTypes = {
   filters: PropTypes.object,
+  className: PropTypes.string,
 }
 
 ShuffleAllButton.defaultProps = {

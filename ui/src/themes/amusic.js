@@ -147,6 +147,28 @@ export default {
         borderRadius: '6px',
       },
     },
+    NDListenNow: {
+      root: {
+        backgroundImage:
+          'linear-gradient(135deg, rgba(255,78,107,0.28) 0%, rgba(29,29,29,0.94) 58%, #1a1a1a 100%)',
+      },
+      title: {
+        color: '#eee',
+      },
+    },
+    NDHomeRail: {
+      title: {
+        color: '#eee',
+      },
+      source: {
+        color: '#ccc',
+      },
+    },
+    NDMediaCard: {
+      root: {
+        backgroundColor: '#222',
+      },
+    },
     NDLogin: {
       systemNameLink: {
         color: '#ff4e6b',

@@ -647,9 +647,45 @@
       }
     },
     "albumList": "Albums",
+    "listenNow": "Listen Now",
     "playlists": "Playlists",
     "sharedPlaylists": "Shared Playlists",
     "about": "About"
+  },
+  "listenNow": {
+    "heroEyebrow": "Your library",
+    "heroTitle": "Remix what you own",
+    "heroSubtitle": "Start a seeded shuffle across the music already on this server. Missing tracks stay out of the queue.",
+    "shuffleHint": "Preview first. The current queue stays put until you confirm.",
+    "seeAll": "See all",
+    "loading": "Loading albums",
+    "error": "Could not load this shelf.",
+    "retry": "Try again",
+    "empty": "No albums in this shelf yet.",
+    "pageError": "Local shelves could not be loaded. Playback was not changed.",
+    "openAlbum": "Open %{name}",
+    "rails": {
+      "recentlyAdded": {
+        "title": "Recently added",
+        "source": "Local library · date added",
+        "empty": "Newly imported albums will appear here."
+      },
+      "recentlyPlayed": {
+        "title": "Recently played",
+        "source": "Local listening history",
+        "empty": "Play something from this library to fill this shelf."
+      },
+      "favourites": {
+        "title": "Favourites",
+        "source": "Local starred albums",
+        "empty": "Star an album to keep it on this shelf."
+      },
+      "discover": {
+        "title": "From this library",
+        "source": "Local random albums",
+        "empty": "Add albums to this library to explore them here."
+      }
+    }
   },
   "player": {
     "playListsText": "Play Queue",

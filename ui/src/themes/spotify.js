@@ -300,6 +300,28 @@ export default {
         overflow: 'visible',
       },
     },
+    NDListenNow: {
+      root: {
+        backgroundImage:
+          'linear-gradient(135deg, rgba(29,185,84,0.28) 0%, rgba(24,24,24,0.94) 58%, #121212 100%)',
+      },
+      title: {
+        color: '#fff',
+      },
+    },
+    NDHomeRail: {
+      title: {
+        color: '#fff',
+      },
+      source: {
+        color: '#b3b3b3',
+      },
+    },
+    NDMediaCard: {
+      root: {
+        backgroundColor: '#181818',
+      },
+    },
     NDAudioPlayer: {
       audioTitle: {
         color: '#fff',
@@ -311,9 +333,6 @@ export default {
       songInfo: {
         fontSize: '0.675rem',
         color: '#b3b3b3',
-      },
-      player: {
-        border: '10px solid blue',
       },
     },
     NDLogin: {
