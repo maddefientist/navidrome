@@ -36,11 +36,19 @@ const useStyles = makeStyles(
     active: {
       color: theme.palette.text.primary,
       fontWeight: 700,
+      '& .MuiListItemIcon-root': {
+        color: 'inherit',
+      },
     },
     menuItem: {
       minHeight: 48,
+      minWidth: 48,
       borderRadius: theme.spacing(1),
       margin: theme.spacing(0.25, 1),
+      color: theme.palette.text.primary,
+      '& .MuiListItemIcon-root': {
+        color: 'inherit',
+      },
       '&:focus-visible': {
         outline: `2px solid ${theme.palette.primary.main}`,
         outlineOffset: 2,

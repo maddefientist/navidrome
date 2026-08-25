@@ -663,6 +663,7 @@
     "retry": "Try again",
     "empty": "No albums in this shelf yet.",
     "pageError": "Local shelves could not be loaded. Playback was not changed.",
+    "sessionExpired": "Your session expired. Sign in again to load these shelves. Playback was not changed.",
     "openAlbum": "Open %{name}",
     "rails": {
       "recentlyAdded": {

@@ -92,6 +92,7 @@ export default {
     MuiDrawer: {
       paper: {
         backgroundColor: '#10151d',
+        color: ink,
         borderRight: '1px solid rgba(255,255,255,0.06)',
       },
     },
@@ -101,13 +102,34 @@ export default {
           'linear-gradient(180deg, #182033 0%, #0e1218 280px, #0e1218 100%)',
       },
     },
+    RaSidebar: {
+      fixed: {
+        backgroundColor: '#10151d',
+      },
+      drawerPaper: {
+        backgroundColor: '#10151d !important',
+        color: ink,
+      },
+    },
     RaMenuItemLink: {
       root: {
         minHeight: 48,
         borderRadius: 12,
+        color: ink,
+        '& .MuiListItemIcon-root': {
+          color: ink,
+        },
+        '&:focus-visible': {
+          outline: '2px solid #8ec8ff',
+          outlineOffset: 2,
+        },
       },
       active: {
         backgroundColor: 'rgba(142, 200, 255, 0.12)',
+        color: ink,
+        '& .MuiListItemIcon-root': {
+          color: '#8ec8ff',
+        },
       },
     },
     NDListenNow: {

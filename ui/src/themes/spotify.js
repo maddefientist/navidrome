@@ -125,6 +125,11 @@ export default {
         background: '#000',
         paddingTop: '10px',
       },
+      paper: {
+        backgroundColor: '#000',
+        color: '#fff',
+        borderRight: '1px solid #282828',
+      },
     },
     MuiTableRow: {
       root: {
@@ -443,6 +448,33 @@ export default {
     RaSidebar: {
       root: {
         height: 'initial',
+      },
+      fixed: {
+        backgroundColor: '#000',
+      },
+      drawerPaper: {
+        backgroundColor: '#000 !important',
+        color: '#fff',
+      },
+    },
+    RaMenuItemLink: {
+      root: {
+        minHeight: 48,
+        color: '#fff',
+        '& .MuiListItemIcon-root': {
+          color: '#fff',
+        },
+        '&:focus-visible': {
+          outline: '2px solid #1db954',
+          outlineOffset: 2,
+        },
+      },
+      active: {
+        color: '#fff',
+        backgroundColor: 'rgba(29, 185, 84, 0.16)',
+        '& .MuiListItemIcon-root': {
+          color: '#1db954',
+        },
       },
     },
   },

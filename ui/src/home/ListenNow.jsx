@@ -112,7 +112,28 @@ const emptyRailState = () => ({
   items: [],
   loading: true,
   error: false,
+  authError: false,
 })
+
+const getHttpStatus = (error) => {
+  if (typeof error === 'number') {
+    return error
+  }
+  if (!error || typeof error !== 'object') {
+    return undefined
+  }
+  const status = error.status ?? error.statusCode ?? error.status_code
+  if (typeof status === 'number') {
+    return status
+  }
+  if (typeof status === 'string' && status.trim() !== '') {
+    const parsed = Number(status)
+    return Number.isFinite(parsed) ? parsed : undefined
+  }
+  return undefined
+}
+
+const isUnauthorizedError = (error) => getHttpStatus(error) === 401
 
 export const ListenNow = () => {
   const classes = useStyles()
@@ -147,6 +168,22 @@ export const ListenNow = () => {
     [libraryIds],
   )
 
+  const settleRail = useCallback((railId, nextState, signal) => {
+    if (signal?.aborted) {
+      return
+    }
+    setRailState((current) => ({
+      ...current,
+      [railId]: {
+        items: [],
+        loading: false,
+        error: false,
+        authError: false,
+        ...nextState,
+      },
+    }))
+  }, [])
+
   const loadRails = useCallback(
     async (signal) => {
       setRailState((current) =>
@@ -155,6 +192,7 @@ export const ListenNow = () => {
             items: current[rail.id]?.items || [],
             loading: true,
             error: false,
+            authError: false,
           }
           return acc
         }, {}),
@@ -162,49 +200,43 @@ export const ListenNow = () => {
 
       await Promise.all(
         rails.map(async (rail) => {
-          const list = albumLists[rail.listKey]
-          if (!list) {
-            if (signal?.aborted) {
-              return
-            }
-            setRailState((current) => ({
-              ...current,
-              [rail.id]: { items: [], loading: false, error: false },
-            }))
-            return
-          }
-
-          const { sort, filter } = parseAlbumListParams(list.params)
           try {
-            const { data = [] } = await getList('album', {
-              pagination: { page: 1, perPage: RAIL_LIMIT },
-              sort,
-              filter: { ...filter, ...albumFilter },
-            })
-            if (signal?.aborted) {
+            const list = albumLists[rail.listKey]
+            if (!list) {
+              settleRail(rail.id, { items: [] }, signal)
               return
             }
-            setRailState((current) => ({
-              ...current,
-              [rail.id]: {
+
+            const { sort, filter } = parseAlbumListParams(list.params)
+            const { data = [] } = await Promise.resolve(
+              getList('album', {
+                pagination: { page: 1, perPage: RAIL_LIMIT },
+                sort,
+                filter: { ...filter, ...albumFilter },
+              }),
+            )
+            settleRail(
+              rail.id,
+              {
                 items: Array.isArray(data) ? data : [],
-                loading: false,
-                error: false,
               },
-            }))
-          } catch (_error) {
-            if (signal?.aborted) {
-              return
-            }
-            setRailState((current) => ({
-              ...current,
-              [rail.id]: { items: [], loading: false, error: true },
-            }))
+              signal,
+            )
+          } catch (error) {
+            settleRail(
+              rail.id,
+              {
+                items: [],
+                error: true,
+                authError: isUnauthorizedError(error),
+              },
+              signal,
+            )
           }
         }),
       )
     },
-    [albumFilter, getList, rails],
+    [albumFilter, getList, rails, settleRail],
   )
 
   useEffect(() => {
@@ -222,22 +254,34 @@ export const ListenNow = () => {
         ...(current[railId] || emptyRailState()),
         loading: true,
         error: false,
+        authError: false,
       },
     }))
   }, [])
 
   const mosaicAlbums = railState.recentlyAdded?.items || []
+  const hasAuthError = rails.some((rail) => railState[rail.id]?.authError)
   const hasPageError = rails.every((rail) => railState[rail.id]?.error)
+  const pageErrorMessage = hasAuthError
+    ? translate('listenNow.sessionExpired', {
+        _: 'Your session expired. Sign in again to load these shelves. Playback was not changed.',
+      })
+    : translate('listenNow.pageError', {
+        _: 'Local shelves could not be loaded. Playback was not changed.',
+      })
 
   return (
     <div className={classes.page} data-testid="listen-now-page">
       <Title subTitle={translate('menu.listenNow', { _: 'Listen Now' })} />
       <HeroShuffleCard filters={shuffleFilters} albums={mosaicAlbums} />
-      {hasPageError && (
-        <div className={classes.pageError} role="alert">
-          {translate('listenNow.pageError', {
-            _: 'Local shelves could not be loaded. Playback was not changed.',
-          })}
+      {(hasAuthError || hasPageError) && (
+        <div
+          className={classes.pageError}
+          role="alert"
+          data-testid="listen-now-page-error"
+          data-error-kind={hasAuthError ? 'auth' : 'load'}
+        >
+          {pageErrorMessage}
         </div>
       )}
       {rails.map((rail) => {

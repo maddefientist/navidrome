@@ -81,6 +81,10 @@ describe('HomeRail', () => {
     const onRetry = vi.fn()
     renderRail({ items: [], error: true, onRetry })
 
+    expect(screen.queryByTestId('rail-skeleton-card')).not.toBeInTheDocument()
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Could not load this shelf.',
+    )
     fireEvent.click(screen.getByRole('button', { name: /try again/i }))
     expect(onRetry).toHaveBeenCalledTimes(1)
   })

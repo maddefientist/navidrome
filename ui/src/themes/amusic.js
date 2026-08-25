@@ -48,6 +48,11 @@ export default {
         background: '#1d1d1d',
         borderRight: '1px solid #fff1',
       },
+      paper: {
+        backgroundColor: '#1d1d1d',
+        color: '#eee',
+        borderRight: '1px solid #fff1',
+      },
     },
     MuiToolbar: {
       root: {
@@ -237,6 +242,35 @@ export default {
     RaBulkDeleteWithUndoButton: {
       deleteButton: {
         color: '#fff !important',
+      },
+    },
+    RaSidebar: {
+      fixed: {
+        backgroundColor: '#1d1d1d',
+      },
+      drawerPaper: {
+        backgroundColor: '#1d1d1d !important',
+        color: '#eee',
+      },
+    },
+    RaMenuItemLink: {
+      root: {
+        minHeight: 48,
+        color: '#eee',
+        '& .MuiListItemIcon-root': {
+          color: '#ff4e6b',
+        },
+        '&:focus-visible': {
+          outline: '2px solid #ff4e6b',
+          outlineOffset: 2,
+        },
+      },
+      active: {
+        color: '#eee',
+        backgroundColor: 'rgba(255, 78, 107, 0.16)',
+        '& .MuiListItemIcon-root': {
+          color: '#ff4e6b',
+        },
       },
     },
     RaPaginationActions: {

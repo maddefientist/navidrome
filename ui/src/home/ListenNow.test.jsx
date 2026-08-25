@@ -195,4 +195,51 @@ describe('ListenNow', () => {
     expect(screen.queryByText(/lidarr/i)).not.toBeInTheDocument()
     expect(mockDispatch).not.toHaveBeenCalled()
   })
+
+  it('settles rejected rail requests from skeletons to accessible errors', async () => {
+    mockGetList.mockImplementation(() =>
+      Promise.reject(new Error('history unavailable')),
+    )
+
+    renderPage()
+
+    expect(await screen.findAllByRole('alert')).not.toHaveLength(0)
+    expect(screen.queryByTestId('rail-skeleton-card')).not.toBeInTheDocument()
+    expect(screen.getAllByText('Could not load this shelf.')).toHaveLength(4)
+    expect(
+      screen.getByText(
+        'Local shelves could not be loaded. Playback was not changed.',
+      ),
+    ).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: /try again/i })).toHaveLength(
+      4,
+    )
+    expect(screen.queryByText(/history unavailable/i)).not.toBeInTheDocument()
+    expect(mockDispatch).not.toHaveBeenCalled()
+  })
+
+  it('shows a session-expired page alert when rail requests return 401', async () => {
+    const unauthorized = Object.assign(new Error('Unauthorized'), {
+      status: 401,
+    })
+    mockGetList.mockImplementation(() => Promise.reject(unauthorized))
+
+    renderPage()
+
+    expect(await screen.findByTestId('listen-now-page-error')).toHaveAttribute(
+      'data-error-kind',
+      'auth',
+    )
+    expect(
+      screen.getByText(
+        'Your session expired. Sign in again to load these shelves. Playback was not changed.',
+      ),
+    ).toBeInTheDocument()
+    expect(screen.queryByTestId('rail-skeleton-card')).not.toBeInTheDocument()
+    expect(screen.getAllByText('Could not load this shelf.')).toHaveLength(4)
+    expect(screen.queryByText('401')).not.toBeInTheDocument()
+    expect(screen.queryByText(/unauthorized/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/listenbrainz/i)).not.toBeInTheDocument()
+    expect(mockDispatch).not.toHaveBeenCalled()
+  })
 })
