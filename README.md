@@ -1,69 +1,55 @@
-<a href="https://www.navidrome.org"><img src="resources/logo-192x192.png" alt="Navidrome logo" title="navidrome" align="right" height="60px" /></a>
+# Navidrome Evolution
 
-# Navidrome Music Server &nbsp;[![Tweet](https://img.shields.io/twitter/url/http/shields.io.svg?style=social)](https://twitter.com/intent/tweet?text=Tired%20of%20paying%20for%20music%20subscriptions%2C%20and%20not%20finding%20what%20you%20really%20like%3F%20Roll%20your%20own%20streaming%20service%21&url=https://navidrome.org&via=navidrome)
+This repository is an **experimental downstream fork** of
+[Navidrome](https://github.com/navidrome/navidrome). It is not an official
+Navidrome release and is not affiliated with or endorsed by the upstream project.
 
-> **Downstream evolution branch:** this fork is an experimental, community-led
-> exploration of a more immediate Listen Now experience, inspectable local mixes,
-> and optional discovery integrations. It is not an official Navidrome release.
-> See [EVOLUTION.md](EVOLUTION.md) for current capabilities, boundaries, and status.
+The active evolution branch adds a local-first Listen Now home, inspectable
+deterministic library mixes, preview-before-play shuffle, and a more immediate
+art-forward interface. ListenBrainz enrichment, a Discovery Inbox, advanced
+history, lyrics presentation, Lidarr handoff, visualizers, and Ollama routing are
+planned layers; they are not connected features today.
 
-[![Last Release](https://img.shields.io/github/v/release/navidrome/navidrome?logo=github&label=latest&style=flat-square)](https://github.com/navidrome/navidrome/releases)
-[![Build](https://img.shields.io/github/actions/workflow/status/navidrome/navidrome/pipeline.yml?branch=master&logo=github&style=flat-square)](https://nightly.link/navidrome/navidrome/workflows/pipeline/master)
-[![Downloads](https://img.shields.io/github/downloads/navidrome/navidrome/total?logo=github&style=flat-square)](https://github.com/navidrome/navidrome/releases/latest)
-[![Docker Pulls](https://img.shields.io/docker/pulls/deluan/navidrome?logo=docker&label=pulls&style=flat-square)](https://hub.docker.com/r/deluan/navidrome)
-[![Dev Chat](https://img.shields.io/discord/671335427726114836?logo=discord&label=discord&style=flat-square)](https://discord.gg/xh7j7yF)
-[![Subreddit](https://img.shields.io/reddit/subreddit-subscribers/navidrome?logo=reddit&label=/r/navidrome&style=flat-square)](https://www.reddit.com/r/navidrome/)
-[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v2.0-ff69b4.svg?style=flat-square)](CODE_OF_CONDUCT.md)
-[![Gurubase](https://img.shields.io/badge/Gurubase-Ask%20Navidrome%20Guru-006BFF?style=flat-square)](https://gurubase.io/g/navidrome)
+- [Current capabilities, roadmap, and privacy boundaries](EVOLUTION.md)
+- [Detailed product and technical scope](PRODUCT_SCOPE.md)
+- [Draft evolution review](https://github.com/maddefientist/navidrome/pull/1)
+- [Official upstream Navidrome repository](https://github.com/navidrome/navidrome)
 
-Navidrome is an open source web-based music collection server and streamer. It gives you freedom to listen to your
-music collection from any browser or mobile device. It's like your personal Spotify!
+This branch is published for source review and isolated staging. There is no
+supported evolution binary or production release yet. Please report fork-specific
+problems in this fork's [issue tracker](https://github.com/maddefientist/navidrome/issues),
+not to the upstream Navidrome project.
 
+## Upstream foundation
 
-**Note**: The `master` branch may be in an unstable or even broken state during development.
-Please use [releases](https://github.com/navidrome/navidrome/releases) instead of
-the `master` branch in order to get a stable set of binaries.
+Navidrome is an open-source web music collection server and streamer. This fork
+retains the upstream GPL-3.0 license, copyright notices, server architecture,
+Subsonic compatibility, and core feature set while developing the downstream
+experience described above.
 
-## [Check out our Live Demo!](https://www.navidrome.org/demo/)
+For the official stable product, releases, documentation, demo, community, and
+hosted offerings, use [navidrome.org](https://www.navidrome.org/) or the
+[official upstream repository](https://github.com/navidrome/navidrome). Those
+resources describe upstream Navidrome, not this experimental fork.
 
-__Any feedback is welcome!__ If you need/want a new feature, find a bug or think of any way to improve Navidrome,
-please file a [GitHub issue](https://github.com/navidrome/navidrome/issues) or join the discussion in our
-[Subreddit](https://www.reddit.com/r/navidrome/). If you want to contribute to the project in any other way
-([ui/backend dev](https://www.navidrome.org/docs/developers/),
-[translations](https://www.navidrome.org/docs/developers/translations/),
-[themes](https://www.navidrome.org/docs/developers/creating-themes)), please join the chat in our
-[Discord server](https://discord.gg/xh7j7yF).
+## Upstream feature foundation
 
-## Installation
+- Handles very **large music collections**
+- Streams virtually **any audio format** available
+- Reads and uses all your beautifully curated **metadata**
+- Great support for **compilations** (Various Artists albums) and **box sets** (multi-disc albums)
+- **Multi-user**, each user has their own play counts, playlists, favourites, etc...
+- Very **low resource usage**
+- **Multi-platform**, runs on macOS, Linux and Windows. **Docker** images are also provided
+- Ready to use binaries for all major platforms, including **Raspberry Pi**
+- Automatically **monitors your library** for changes, importing new files and reloading new metadata
+- Supports **lyrics** from sidecar .ttml, .yaml/.yml Lyricsfile, .elrc, .lrc, .srt, .txt files and embedded TTML, Enhanced LRC, LRC, SRT, and plain-text tags (via `lyricspriority`)
+- **Themeable**, modern and responsive **Web interface** based on [Material UI](https://material-ui.com)
+- **Compatible** with all Subsonic/Madsonic/Airsonic [clients](https://www.navidrome.org/docs/overview/#apps)
+- **Transcoding** on the fly. Can be set per user/player. **Opus encoding is supported**
+- Translated to **various languages**
 
-See instructions on the [project's website](https://www.navidrome.org/docs/installation/)
-
-## Cloud Hosting
-
-[PikaPods](https://www.pikapods.com) has partnered with us to offer you an
-[officially supported, cloud-hosted solution](https://www.navidrome.org/docs/installation/managed/#pikapods).
-A share of the revenue helps fund the development of Navidrome at no additional cost for you.
-
-[![PikaPods](https://www.pikapods.com/static/run-button.svg)](https://www.pikapods.com/pods?run=navidrome)
-
-## Features
-
- - Handles very **large music collections**
- - Streams virtually **any audio format** available
- - Reads and uses all your beautifully curated **metadata**
- - Great support for **compilations** (Various Artists albums) and **box sets** (multi-disc albums)
- - **Multi-user**, each user has their own play counts, playlists, favourites, etc...
- - Very **low resource usage**
- - **Multi-platform**, runs on macOS, Linux and Windows. **Docker** images are also provided
- - Ready to use binaries for all major platforms, including **Raspberry Pi**
- - Automatically **monitors your library** for changes, importing new files and reloading new metadata
- - Supports **lyrics** from sidecar .ttml, .yaml/.yml Lyricsfile, .elrc, .lrc, .srt, .txt files and embedded TTML, Enhanced LRC, LRC, SRT, and plain-text tags (via `lyricspriority`)
- - **Themeable**, modern and responsive **Web interface** based on [Material UI](https://material-ui.com)
- - **Compatible** with all Subsonic/Madsonic/Airsonic [clients](https://www.navidrome.org/docs/overview/#apps)
- - **Transcoding** on the fly. Can be set per user/player. **Opus encoding is supported**
- - Translated to **various languages**
-
-## Translations
+## Upstream translations
 
 Navidrome uses [POEditor](https://poeditor.com/) for translations, and we are always looking
 for [more contributors](https://www.navidrome.org/docs/developers/translations/)
@@ -72,7 +58,8 @@ for [more contributors](https://www.navidrome.org/docs/developers/translations/)
 <img height="32" src="https://github.com/user-attachments/assets/c19b1d2b-01e1-4682-a007-12356c42147c">
 </a>
 
-## Documentation
+## Upstream documentation
+
 All documentation can be found in the project's website: https://www.navidrome.org/docs.
 Here are some useful direct links:
 
@@ -84,7 +71,10 @@ Here are some useful direct links:
 - [Development](https://www.navidrome.org/docs/developers/)
 - [Subsonic API Compatibility](https://www.navidrome.org/docs/developers/subsonic-api/)
 
-## Screenshots
+## Upstream screenshots
+
+These inherited screenshots show official upstream Navidrome. They do not show
+the evolution branch's Listen Now interface.
 
 <p align="left">
     <img height="550" src="https://raw.githubusercontent.com/navidrome/navidrome/master/.github/screenshots/ss-mobile-login.png">
