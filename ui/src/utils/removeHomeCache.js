@@ -1,11 +1,15 @@
 export const removeHomeCache = async () => {
+  if (typeof window.caches === 'undefined') {
+    return
+  }
+
   try {
-    const workboxKey = (await caches.keys()).find((key) =>
+    const workboxKey = (await window.caches.keys()).find((key) =>
       key.startsWith('workbox-precache'),
     )
     if (!workboxKey) return
 
-    const workboxCache = await caches.open(workboxKey)
+    const workboxCache = await window.caches.open(workboxKey)
     const indexKey = (await workboxCache.keys()).find((key) =>
       key.url.includes('app/index.html'),
     )

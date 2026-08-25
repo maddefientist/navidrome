@@ -1,14 +1,36 @@
 # Navidrome Product and Technical Scope
 
-Status: discovery baseline
+Status: active downstream evolution, Phase 1
 
-Date: 2026-08-19
+Updated: 2026-08-25
 
 Upstream repository: `navidrome/navidrome`
 
 Audited upstream master: `dff9e47c2ea53e040ddac2fcc36f4563e53053be`
 
 Latest stable release checked: `v0.63.2` (`be10f89c117925fabf10394b8d2962a370108b97`)
+
+This is a public downstream design and engineering document. It deliberately
+contains no deployment addresses, private library metadata, credentials, or
+operator-specific infrastructure details.
+
+## Current implementation state
+
+The evolution branch currently includes:
+
+- a local-first **Listen Now** home with a prominent library shuffle action and
+  art-forward Recently Added, Recently Played, Favourites, and local discovery rails;
+- a deterministic `core/mix` engine with bounded selection, duplicate removal,
+  artist spacing, and explicit degradation metadata;
+- an authenticated, non-mutating `POST /api/mix/preview` endpoint;
+- preview-before-play library shuffle, retry and cancellation handling, selected
+  library filtering, and safe fallback seed generation on HTTP LAN origins;
+- a modernized dark visual system and docked player presentation without changing
+  the underlying playback or queue contracts.
+
+ListenBrainz enrichment, a Discovery Inbox, sonic and mood layers, advanced history,
+lyrics presentation, Lidarr handoff, visualizers, and Ollama routing remain roadmap
+items. They are not represented as connected or production-ready today.
 
 ## Product decision
 
@@ -32,22 +54,22 @@ The first product milestone should make shuffle understandable and mixes useful.
 
 ## What is already built
 
-| Capability | Verified state | Product implication |
-|---|---|---|
-| Shuffle All | The UI requests one server-randomized page capped at 500 tracks in `ui/src/common/ShuffleAllButton.jsx`. | The main gap is semantics, discoverability, session continuity, and transparency—not the existence of random playback. |
-| Client shuffle | `ui/src/actions/player.js` and `ui/src/common/playbackActions.js` contain separate randomization paths. | Consolidate behavior before adding modes. |
-| Instant Mix | The UI calls `getSimilarSongs2`; the backend can use track, album, and artist similarity providers. | Reuse it as a candidate source, not as a second mix engine. |
-| Smart playlists | The criteria system supports play counts, last-played time, ratings, loved state, BPM, dates, tags, roles, random order, percentage limits, and library filtering. | Named offline mix presets can compile into existing criteria rather than bespoke SQL. |
-| Sonic similarity | `core/sonic` and the `SonicSimilarity` plugin capability exist in stable. | Content-based similarity is already an optional extension point. |
-| External discovery | Last.fm, ListenBrainz, and Deezer adapters exist. ListenBrainz Labs supplies similar-artist and similar-recording data. | Improve matching, source health, and presentation before adding more providers. |
-| External-to-local matching | `core/matcher` resolves candidates by identifiers and conservative fuzzy matching and excludes missing files. | All discovery sources should pass through this boundary. |
-| Plugin isolation | WASM plugins expose typed capabilities. HTTP access uses explicit host allowlists; private and loopback access is blocked without one. | A local Ollama or Lidarr connection requires an explicit, reviewable permission boundary. |
-| Queue persistence | Native and Subsonic play-queue APIs persist per-user queues. | Mixes should materialize into the existing queue instead of inventing playback state. |
-| Multi-library access | Repository queries apply per-user library filtering. | Mix candidates must be selected under the caller's context and external/plugin matches rechecked. |
-| UI foundation | React 17, react-admin 3, Material UI 4, Redux, redux-saga, Vite, PWA tooling, and `navidrome-music-player` 4.25.4. | Local improvements are realistic; a wholesale UI rewrite is not a prerequisite. |
-| Visualizer | No analyzer or visualizer implementation was found. ReplayGain conditionally creates a Web Audio graph. | A visualizer requires a shared audio-graph abstraction first. |
-| Ollama | No Ollama, OpenAI, prompt, model, or inference implementation was found. | Treat it as an optional new adapter, not as an extension of `core/agents`. |
-| Lidarr | No Lidarr implementation was found. | Treat acquisition as a separate, confirmed workflow after discovery—not part of mix generation. |
+| Capability                 | Verified state                                                                                                                                                     | Product implication                                                                                                    |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| Shuffle All                | The UI requests one server-randomized page capped at 500 tracks in `ui/src/common/ShuffleAllButton.jsx`.                                                           | The main gap is semantics, discoverability, session continuity, and transparency—not the existence of random playback. |
+| Client shuffle             | `ui/src/actions/player.js` and `ui/src/common/playbackActions.js` contain separate randomization paths.                                                            | Consolidate behavior before adding modes.                                                                              |
+| Instant Mix                | The UI calls `getSimilarSongs2`; the backend can use track, album, and artist similarity providers.                                                                | Reuse it as a candidate source, not as a second mix engine.                                                            |
+| Smart playlists            | The criteria system supports play counts, last-played time, ratings, loved state, BPM, dates, tags, roles, random order, percentage limits, and library filtering. | Named offline mix presets can compile into existing criteria rather than bespoke SQL.                                  |
+| Sonic similarity           | `core/sonic` and the `SonicSimilarity` plugin capability exist in stable.                                                                                          | Content-based similarity is already an optional extension point.                                                       |
+| External discovery         | Last.fm, ListenBrainz, and Deezer adapters exist. ListenBrainz Labs supplies similar-artist and similar-recording data.                                            | Improve matching, source health, and presentation before adding more providers.                                        |
+| External-to-local matching | `core/matcher` resolves candidates by identifiers and conservative fuzzy matching and excludes missing files.                                                      | All discovery sources should pass through this boundary.                                                               |
+| Plugin isolation           | WASM plugins expose typed capabilities. HTTP access uses explicit host allowlists; private and loopback access is blocked without one.                             | A local Ollama or Lidarr connection requires an explicit, reviewable permission boundary.                              |
+| Queue persistence          | Native and Subsonic play-queue APIs persist per-user queues.                                                                                                       | Mixes should materialize into the existing queue instead of inventing playback state.                                  |
+| Multi-library access       | Repository queries apply per-user library filtering.                                                                                                               | Mix candidates must be selected under the caller's context and external/plugin matches rechecked.                      |
+| UI foundation              | React 17, react-admin 3, Material UI 4, Redux, redux-saga, Vite, PWA tooling, and `navidrome-music-player` 4.25.4.                                                 | Local improvements are realistic; a wholesale UI rewrite is not a prerequisite.                                        |
+| Visualizer                 | No analyzer or visualizer implementation was found. ReplayGain conditionally creates a Web Audio graph.                                                            | A visualizer requires a shared audio-graph abstraction first.                                                          |
+| Ollama                     | No Ollama, OpenAI, prompt, model, or inference implementation was found.                                                                                           | Treat it as an optional new adapter, not as an extension of `core/agents`.                                             |
+| Lidarr                     | No Lidarr implementation was found.                                                                                                                                | Treat acquisition as a separate, confirmed workflow after discovery—not part of mix generation.                        |
 
 ## Problems worth solving
 
@@ -292,23 +314,15 @@ This slice proves the architectural seam, improves the product immediately, and 
 - Add feature flags and a deterministic local fallback for every optional subsystem.
 - Do not call a container healthy, an HTTP response successful, or a model receipt valid proof of usable mixes; run end-to-end playback and permission checks.
 
-## Agent execution model
+## Downstream development policy
 
-Codex remains the architecture, integration, risk, and acceptance owner.
-
-| Lane | Current role | Write authority |
-|---|---|---|
-| Claude Opus 5 (`claude-opus-lead`) | Architecture, difficult audits, high-risk design review | Read-only in the current roster |
-| Claude Sonnet 5 (`claude-sonnet-builder`) | Primary bounded implementation and debugging | Promoted for isolated worktree writes |
-| Claude Haiku 4.5 (`claude-haiku-scout`) | Narrow inventory and deterministic verification | Read-only |
-| Grok 4.6 (`grok46-candidate`) | Independent product and architecture challenger | Named, read-only, canary-passed; not an implementation route |
-
-Implementation work should use exact base revisions, repository-relative allowed paths, zero cross-provider fallback, isolated worktrees, and explicit tests. Grok 4.6 should challenge designs and patches until it earns tool/write promotion; it must not be presented as a builder today.
-
-## Decisions still needed before implementation
-
-1. Confirm that “Lidar” means Lidarr.
-2. Decide whether the fork is intended to continuously rebase onto upstream or remain a private product line.
-3. Decide whether Phase 1 is web-UI only or whether a later OpenSubsonic extension is a requirement for third-party clients.
-4. Identify the target deployment host and representative library size for latency and memory budgets.
-5. Choose the exact local Ollama model only when Phase 4 begins; it is not a Phase 1 dependency.
+- Track stable upstream releases and keep upstream integrations reviewable rather
+  than performing an unbounded framework rewrite.
+- Keep the web experience as the first product surface; consider OpenSubsonic
+  extensions only after the server contracts stabilize.
+- Measure mix latency and memory against anonymized large-library fixtures and
+  isolated staging before any production claim.
+- Keep model and provider choices configurable. No external service, acquisition
+  tool, or local LLM may become a playback dependency.
+- Use bounded changes, isolated review branches, independent verification, and
+  explicit rollback for every deployable slice.

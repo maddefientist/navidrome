@@ -2,6 +2,11 @@
 
 # Navidrome Music Server &nbsp;[![Tweet](https://img.shields.io/twitter/url/http/shields.io.svg?style=social)](https://twitter.com/intent/tweet?text=Tired%20of%20paying%20for%20music%20subscriptions%2C%20and%20not%20finding%20what%20you%20really%20like%3F%20Roll%20your%20own%20streaming%20service%21&url=https://navidrome.org&via=navidrome)
 
+> **Downstream evolution branch:** this fork is an experimental, community-led
+> exploration of a more immediate Listen Now experience, inspectable local mixes,
+> and optional discovery integrations. It is not an official Navidrome release.
+> See [EVOLUTION.md](EVOLUTION.md) for current capabilities, boundaries, and status.
+
 [![Last Release](https://img.shields.io/github/v/release/navidrome/navidrome?logo=github&label=latest&style=flat-square)](https://github.com/navidrome/navidrome/releases)
 [![Build](https://img.shields.io/github/actions/workflow/status/navidrome/navidrome/pipeline.yml?branch=master&logo=github&style=flat-square)](https://nightly.link/navidrome/navidrome/workflows/pipeline/master)
 [![Downloads](https://img.shields.io/github/downloads/navidrome/navidrome/total?logo=github&style=flat-square)](https://github.com/navidrome/navidrome/releases/latest)
@@ -15,19 +20,19 @@ Navidrome is an open source web-based music collection server and streamer. It g
 music collection from any browser or mobile device. It's like your personal Spotify!
 
 
-**Note**: The `master` branch may be in an unstable or even broken state during development. 
-Please use [releases](https://github.com/navidrome/navidrome/releases) instead of 
+**Note**: The `master` branch may be in an unstable or even broken state during development.
+Please use [releases](https://github.com/navidrome/navidrome/releases) instead of
 the `master` branch in order to get a stable set of binaries.
 
 ## [Check out our Live Demo!](https://www.navidrome.org/demo/)
 
-__Any feedback is welcome!__ If you need/want a new feature, find a bug or think of any way to improve Navidrome, 
-please file a [GitHub issue](https://github.com/navidrome/navidrome/issues) or join the discussion in our 
-[Subreddit](https://www.reddit.com/r/navidrome/). If you want to contribute to the project in any other way 
-([ui/backend dev](https://www.navidrome.org/docs/developers/), 
-[translations](https://www.navidrome.org/docs/developers/translations/), 
-[themes](https://www.navidrome.org/docs/developers/creating-themes)), please join the chat in our 
-[Discord server](https://discord.gg/xh7j7yF). 
+__Any feedback is welcome!__ If you need/want a new feature, find a bug or think of any way to improve Navidrome,
+please file a [GitHub issue](https://github.com/navidrome/navidrome/issues) or join the discussion in our
+[Subreddit](https://www.reddit.com/r/navidrome/). If you want to contribute to the project in any other way
+([ui/backend dev](https://www.navidrome.org/docs/developers/),
+[translations](https://www.navidrome.org/docs/developers/translations/),
+[themes](https://www.navidrome.org/docs/developers/creating-themes)), please join the chat in our
+[Discord server](https://discord.gg/xh7j7yF).
 
 ## Installation
 
@@ -35,14 +40,14 @@ See instructions on the [project's website](https://www.navidrome.org/docs/insta
 
 ## Cloud Hosting
 
-[PikaPods](https://www.pikapods.com) has partnered with us to offer you an 
-[officially supported, cloud-hosted solution](https://www.navidrome.org/docs/installation/managed/#pikapods). 
+[PikaPods](https://www.pikapods.com) has partnered with us to offer you an
+[officially supported, cloud-hosted solution](https://www.navidrome.org/docs/installation/managed/#pikapods).
 A share of the revenue helps fund the development of Navidrome at no additional cost for you.
 
 [![PikaPods](https://www.pikapods.com/static/run-button.svg)](https://www.pikapods.com/pods?run=navidrome)
 
 ## Features
- 
+
  - Handles very **large music collections**
  - Streams virtually **any audio format** available
  - Reads and uses all your beautifully curated **metadata**
@@ -51,7 +56,7 @@ A share of the revenue helps fund the development of Navidrome at no additional 
  - Very **low resource usage**
  - **Multi-platform**, runs on macOS, Linux and Windows. **Docker** images are also provided
  - Ready to use binaries for all major platforms, including **Raspberry Pi**
- - Automatically **monitors your library** for changes, importing new files and reloading new metadata 
+ - Automatically **monitors your library** for changes, importing new files and reloading new metadata
  - Supports **lyrics** from sidecar .ttml, .yaml/.yml Lyricsfile, .elrc, .lrc, .srt, .txt files and embedded TTML, Enhanced LRC, LRC, SRT, and plain-text tags (via `lyricspriority`)
  - **Themeable**, modern and responsive **Web interface** based on [Material UI](https://material-ui.com)
  - **Compatible** with all Subsonic/Madsonic/Airsonic [clients](https://www.navidrome.org/docs/overview/#apps)
@@ -60,7 +65,7 @@ A share of the revenue helps fund the development of Navidrome at no additional 
 
 ## Translations
 
-Navidrome uses [POEditor](https://poeditor.com/) for translations, and we are always looking 
+Navidrome uses [POEditor](https://poeditor.com/) for translations, and we are always looking
 for [more contributors](https://www.navidrome.org/docs/developers/translations/)
 
 <a href="https://poeditor.com/"> 
@@ -68,7 +73,7 @@ for [more contributors](https://www.navidrome.org/docs/developers/translations/)
 </a>
 
 ## Documentation
-All documentation can be found in the project's website: https://www.navidrome.org/docs. 
+All documentation can be found in the project's website: https://www.navidrome.org/docs.
 Here are some useful direct links:
 
 - [Overview](https://www.navidrome.org/docs/overview/)
