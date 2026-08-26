@@ -10,7 +10,6 @@ import { makeStyles } from '@material-ui/core/styles'
 import withWidth from '@material-ui/core/withWidth'
 import { Link } from 'react-router-dom'
 import { linkToRecord, useListContext, Loading } from 'react-admin'
-import { withContentRect } from 'react-measure'
 import { useDrag } from 'react-dnd'
 import subsonic from '../subsonic'
 import {
@@ -101,11 +100,15 @@ const useCoverStyles = makeStyles({
     aspectRatio: '1',
     overflow: 'hidden',
   },
-  cover: {
-    display: 'inline-block',
+  coverInner: {
     width: '100%',
-    objectFit: 'contain',
-    height: (props) => props.height,
+    height: '100%',
+  },
+  cover: {
+    display: 'block',
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
     transition: 'opacity 0.3s ease-in-out',
   },
   coverLoading: {
@@ -121,14 +124,8 @@ const getColsForWidth = (width) => {
   return 9
 }
 
-const Cover = withContentRect('bounds')(({
-  record,
-  measureRef,
-  contentRect,
-}) => {
-  // Force height to be the same as the width determined by the GridList
-  // noinspection JSSuspiciousNameCombination
-  const classes = useCoverStyles({ height: contentRect.bounds.width })
+const Cover = ({ record }) => {
+  const classes = useCoverStyles()
   const [, dragAlbumRef] = useDrag(
     () => ({
       type: DraggableTypes.ALBUM,
@@ -142,8 +139,8 @@ const Cover = withContentRect('bounds')(({
   const { imgUrl, loading: imageLoading } = useImageUrl(url)
 
   return (
-    <div ref={measureRef} className={classes.coverContainer}>
-      <div ref={dragAlbumRef}>
+    <div className={classes.coverContainer}>
+      <div ref={dragAlbumRef} className={classes.coverInner}>
         <img
           src={imgUrl || undefined}
           alt={record.name}
@@ -152,7 +149,7 @@ const Cover = withContentRect('bounds')(({
       </div>
     </div>
   )
-})
+}
 
 const AlbumGridTile = ({ showArtist, record, basePath, ...props }) => {
   const classes = useStyles()

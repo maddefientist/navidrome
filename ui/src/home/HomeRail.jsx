@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Button, Typography, useMediaQuery } from '@material-ui/core'
 import { makeStyles } from '@material-ui/core/styles'
 import { useTranslate } from 'react-admin'
+import clsx from 'clsx'
 import { MediaCard } from './MediaCard'
 
 const useStyles = makeStyles(
@@ -52,7 +53,7 @@ const useStyles = makeStyles(
       gap: theme.spacing(1.5),
       overflowX: 'auto',
       paddingBottom: theme.spacing(1),
-      scrollSnapType: 'x mandatory',
+      scrollSnapType: 'x proximity',
       scrollPaddingInline: theme.spacing(0.5),
       WebkitOverflowScrolling: 'touch',
       scrollbarWidth: 'thin',
@@ -84,15 +85,41 @@ const useStyles = makeStyles(
           ? 'rgba(255, 255, 255, 0.04)'
           : theme.palette.action.hover,
     },
-    skeleton: {
+    skeletonCard: {
+      display: 'flex',
+      flexDirection: 'column',
+      width: '100%',
+      minWidth: 0,
+      borderRadius: theme.spacing(1.5),
+      backgroundColor:
+        theme.palette.type === 'dark'
+          ? 'rgba(255, 255, 255, 0.04)'
+          : theme.palette.background.paper,
+      padding: theme.spacing(1.25),
+    },
+    skeletonCover: {
       width: '100%',
       aspectRatio: '1',
-      borderRadius: theme.spacing(1.5),
+      borderRadius: theme.spacing(1),
       backgroundColor: theme.palette.action.disabledBackground,
       animation: '$pulse 1.4s ease-in-out infinite',
       '@media (prefers-reduced-motion: reduce)': {
         animation: 'none',
       },
+    },
+    skeletonLine: {
+      height: 12,
+      borderRadius: 4,
+      marginTop: theme.spacing(1.25),
+      backgroundColor: theme.palette.action.disabledBackground,
+      animation: '$pulse 1.4s ease-in-out infinite',
+      '@media (prefers-reduced-motion: reduce)': {
+        animation: 'none',
+      },
+    },
+    skeletonLineShort: {
+      width: '60%',
+      marginTop: theme.spacing(0.75),
     },
     '@keyframes pulse': {
       '0%': { opacity: 0.55 },
@@ -160,9 +187,18 @@ export const HomeRail = ({
           {Array.from({ length: 6 }, (_, index) => (
             <div className={classes.snap} key={`${id}-skeleton-${index}`}>
               <div
-                className={classes.skeleton}
+                className={classes.skeletonCard}
                 data-testid="rail-skeleton-card"
-              />
+              >
+                <div className={classes.skeletonCover} />
+                <div className={classes.skeletonLine} />
+                <div
+                  className={clsx(
+                    classes.skeletonLine,
+                    classes.skeletonLineShort,
+                  )}
+                />
+              </div>
             </div>
           ))}
         </div>

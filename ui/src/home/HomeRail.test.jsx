@@ -63,10 +63,34 @@ describe('HomeRail', () => {
 
   it('reserves snap geometry while a local rail is loading', () => {
     renderRail({ loading: true, items: [] })
-    expect(screen.getAllByTestId('rail-skeleton-card')).toHaveLength(6)
+    const skeletons = screen.getAllByTestId('rail-skeleton-card')
+    expect(skeletons).toHaveLength(6)
     expect(
       screen.getByRole('status', { name: 'Loading albums' }),
     ).toBeInTheDocument()
+  })
+
+  it('matches loaded MediaCard geometry for each skeleton', () => {
+    renderRail({ loading: true, items: [] })
+    const skeletons = screen.getAllByTestId('rail-skeleton-card')
+
+    skeletons.forEach((skeleton) => {
+      expect(getComputedStyle(skeleton).display).toBe('flex')
+      expect(getComputedStyle(skeleton).flexDirection).toBe('column')
+      // padded square artwork area followed by two text placeholders
+      expect(skeleton.children).toHaveLength(3)
+      const [cover, titleLine, subtitleLine] = skeleton.children
+      expect(getComputedStyle(cover).aspectRatio).toBe('1')
+      expect(getComputedStyle(titleLine).height).not.toBe('')
+      expect(getComputedStyle(subtitleLine).height).not.toBe('')
+    })
+  })
+
+  it('uses proximity snapping on the scroller so overflow stays contained', () => {
+    renderRail({ loading: true, items: [] })
+    const scroller = screen.getByRole('status', { name: 'Loading albums' })
+    expect(getComputedStyle(scroller).scrollSnapType).toContain('proximity')
+    expect(getComputedStyle(scroller).overflowX).toBe('auto')
   })
 
   it('renders an empty local shelf without inventing connected sources', () => {
