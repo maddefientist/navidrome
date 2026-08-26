@@ -51,8 +51,9 @@ const useStyle = makeStyles(
             ? 'rgba(255,255,255,0.08)'
             : 'rgba(0,0,0,0.08)'
         }`,
+        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
       },
-      '@media screen and (max-width:810px)': {
+      [theme.breakpoints.down('sm')]: {
         '& .sound-operation': {
           display: 'none',
         },

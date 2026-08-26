@@ -25,7 +25,10 @@ const useStyles = makeStyles(
         easing: theme.transitions.easing.sharp,
         duration: theme.transitions.duration.leavingScreen,
       }),
-      paddingBottom: (props) => (props.addPadding ? '96px' : '24px'),
+      paddingBottom: (props) =>
+        props.addPadding
+          ? 'calc(96px + env(safe-area-inset-bottom, 0px))'
+          : 'calc(24px + env(safe-area-inset-bottom, 0px))',
     },
     open: {
       width: 248,

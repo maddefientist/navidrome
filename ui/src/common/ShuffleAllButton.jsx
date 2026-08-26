@@ -32,6 +32,9 @@ import { createShuffleSeed } from './shuffleSeed'
 const useStyles = makeStyles((theme) => ({
   dialogContent: {
     minHeight: theme.spacing(68),
+    [theme.breakpoints.down('xs')]: {
+      minHeight: 0,
+    },
   },
   previewList: {
     transition: 'opacity 150ms cubic-bezier(0.4, 0, 0.2, 1)',

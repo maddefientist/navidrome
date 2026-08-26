@@ -262,6 +262,15 @@ describe('ShuffleAllButton', () => {
     )
   })
 
+  it('keeps the preview dialog in a bounded paper above xs', async () => {
+    renderButton()
+    openPreview()
+
+    const dialog = await screen.findByRole('dialog')
+    expect(dialog).not.toHaveClass('MuiDialog-paperFullScreen')
+    await screen.findByRole('list', { name: 'shuffle-preview-tracks' })
+  })
+
   it('notifies and preserves playback when the preview request fails', async () => {
     mockHttpClient.mockRejectedValue(new Error('network unavailable'))
     renderButton()

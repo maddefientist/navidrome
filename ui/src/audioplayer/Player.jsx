@@ -48,7 +48,7 @@ const Player = () => {
   const currentTrackIdRef = useRef(null)
   const stoppedRef = useRef(false)
   const [audioInstance, setAudioInstance] = useState(null)
-  const isDesktop = useMediaQuery('(min-width:810px)')
+  const isDesktop = useMediaQuery((theme) => theme.breakpoints.up('md'))
   const isMobilePlayer =
     /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
       navigator.userAgent,

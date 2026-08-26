@@ -13,8 +13,12 @@ const useStyles = makeStyles(
   (theme) => ({
     root: {
       minHeight: '100vh',
+      '@supports (min-height: 100dvh)': {
+        minHeight: '100dvh',
+      },
       backgroundColor: theme.palette.background.default,
-      paddingBottom: (props) => (props.addPadding ? 96 : 0),
+      paddingBottom: (props) =>
+        props.addPadding ? 'calc(96px + env(safe-area-inset-bottom, 0px))' : 0,
     },
   }),
   { name: 'NDLayout' },
