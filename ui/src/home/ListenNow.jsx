@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSelector } from 'react-redux'
 import { Title, useDataProvider, useTranslate } from 'react-admin'
 import { makeStyles } from '@material-ui/core/styles'
@@ -139,7 +139,8 @@ export const ListenNow = () => {
   const classes = useStyles()
   const translate = useTranslate()
   const dataProvider = useDataProvider()
-  const getList = dataProvider.getList
+  const getListRef = useRef(dataProvider.getList)
+  getListRef.current = dataProvider.getList
   const selectedLibraries = useSelector(
     (state) => state.library?.selectedLibraries || [],
   )
@@ -209,7 +210,7 @@ export const ListenNow = () => {
 
             const { sort, filter } = parseAlbumListParams(list.params)
             const { data = [] } = await Promise.resolve(
-              getList('album', {
+              getListRef.current('album', {
                 pagination: { page: 1, perPage: RAIL_LIMIT },
                 sort,
                 filter: { ...filter, ...albumFilter },
@@ -236,7 +237,7 @@ export const ListenNow = () => {
         }),
       )
     },
-    [albumFilter, getList, rails, settleRail],
+    [albumFilter, rails, settleRail],
   )
 
   useEffect(() => {

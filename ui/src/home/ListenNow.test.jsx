@@ -8,6 +8,7 @@ import { ListenNow } from './ListenNow'
 const mockGetList = vi.fn()
 const mockDispatch = vi.fn()
 let selectedLibraries = [2, 4]
+let useUnstableDataProvider = false
 
 vi.mock('react-redux', () => ({
   useSelector: (selector) =>
@@ -22,7 +23,10 @@ const dataProvider = { getList: (...args) => mockGetList(...args) }
 
 vi.mock('react-admin', () => ({
   Title: () => null,
-  useDataProvider: () => dataProvider,
+  useDataProvider: () =>
+    useUnstableDataProvider
+      ? { getList: (...args) => mockGetList(...args) }
+      : dataProvider,
   useTranslate:
     () =>
     (key, options = {}) => {
@@ -99,6 +103,7 @@ describe('ListenNow', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     selectedLibraries = [2, 4]
+    useUnstableDataProvider = false
     mockGetList.mockImplementation((_resource, params) =>
       Promise.resolve(resolveBySort(params)),
     )
@@ -219,6 +224,7 @@ describe('ListenNow', () => {
   })
 
   it('shows a session-expired page alert when rail requests return 401', async () => {
+    useUnstableDataProvider = true
     const unauthorized = Object.assign(new Error('Unauthorized'), {
       status: 401,
     })
@@ -241,5 +247,6 @@ describe('ListenNow', () => {
     expect(screen.queryByText(/unauthorized/i)).not.toBeInTheDocument()
     expect(screen.queryByText(/listenbrainz/i)).not.toBeInTheDocument()
     expect(mockDispatch).not.toHaveBeenCalled()
+    await waitFor(() => expect(mockGetList).toHaveBeenCalledTimes(4))
   })
 })
