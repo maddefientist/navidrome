@@ -48,10 +48,22 @@
         "addToPlaylist": "Add to Playlist",
         "showInPlaylist": "Show in Playlist",
         "shuffleAll": "Shuffle All",
+        "shuffleLibrary": "Shuffle Library",
         "download": "Download",
         "playNext": "Play Next",
         "info": "Get Info",
         "instantMix": "Instant Mix"
+      },
+      "mix": {
+        "previewTitle": "Preview Library Shuffle",
+        "ready": "%{count} tracks · %{duration}. Your current queue will not change until you confirm.",
+        "degraded": "Some spacing or availability preferences could not be fully maintained.",
+        "reason": {
+          "library_shuffle": "Seeded library shuffle"
+        },
+        "moreTracks": "and %{count} more",
+        "tryAnother": "Try Another",
+        "play": "Play This Shuffle"
       }
     },
     "album": {
@@ -228,6 +240,47 @@
         "song_exist": "There are duplicates being added to the playlist. Would you like to add the duplicates or skip them?",
         "noPlaylistsFound": "No playlists found",
         "noPlaylists": "No playlists available"
+      },
+      "smart": {
+        "toggleLabel": "Smart playlist",
+        "toggleHelp": "Smart playlists update automatically from your local metadata and listening annotations (plays, favourites, dates added), instead of a fixed list of songs.",
+        "conjunctionLabel": "Match",
+        "conjunctionAll": "All conditions",
+        "conjunctionAny": "Any condition",
+        "conditionsLegend": "Conditions",
+        "conditionLegend": "Condition %{index}",
+        "addCondition": "Add condition",
+        "removeCondition": "Remove condition %{index}",
+        "fieldLabel": "Field",
+        "operatorLabel": "Operator",
+        "valueLabel": "Value",
+        "valueMin": "Min",
+        "valueMax": "Max",
+        "sortLabel": "Sort by",
+        "sortNone": "No sort",
+        "orderLabel": "Order",
+        "limitLabel": "Limit",
+        "presetsLabel": "Start from a preset:",
+        "presets": {
+          "recentlyPlayed": "Recently Played",
+          "unplayed": "Unplayed",
+          "lovedButForgotten": "Loved but Forgotten",
+          "freshArrivals": "Fresh Arrivals"
+        },
+        "schema": {
+          "loading": "Loading smart playlist fields…",
+          "error": "Could not load smart playlist fields.",
+          "retry": "Retry"
+        },
+        "errors": {
+          "noConditions": "Add at least one complete condition.",
+          "incompleteCondition": "Complete all fields for every condition.",
+          "unsupportedField": "Field \"%{field}\" is not supported.",
+          "unsupportedOperator": "Operator \"%{operator}\" is not supported.",
+          "invalidValue": "Enter a valid value for every condition.",
+          "invalidLimit": "Limit must be between 1 and 5000.",
+          "schemaUnavailable": "Smart playlist fields could not be loaded. Retry before saving."
+        }
       }
     },
     "radio": {
@@ -565,6 +618,7 @@
     "coverRemoved": "Cover art removed",
     "coverUploadError": "Error uploading cover art",
     "coverRemoveError": "Error removing cover art",
+    "shufflePreviewFailed": "Could not prepare a playable library shuffle.",
     "note": "NOTE",
     "transcodingDisabled": "Changing the transcoding configuration through the web interface is disabled for security reasons. If you would like to change (edit or add) transcoding options, restart the server with the %{config} configuration option.",
     "transcodingEnabled": "Navidrome is currently running with %{config}, making it possible to run system commands from the transcoding settings using the web interface. We recommend to disable it for security reasons and only enable it when configuring Transcoding options.",
@@ -634,9 +688,95 @@
       }
     },
     "albumList": "Albums",
+    "listenNow": "Listen Now",
+    "mixes": "Mix Studio",
     "playlists": "Playlists",
     "sharedPlaylists": "Shared Playlists",
     "about": "About"
+  },
+  "listenNow": {
+    "heroEyebrow": "Your library",
+    "heroTitle": "Remix what you own",
+    "heroSubtitle": "Start a seeded shuffle across the music already on this server. Missing tracks stay out of the queue.",
+    "shuffleHint": "Preview first. The current queue stays put until you confirm.",
+    "seeAll": "See all",
+    "loading": "Loading albums",
+    "error": "Could not load this shelf.",
+    "retry": "Try again",
+    "empty": "No albums in this shelf yet.",
+    "scrollPrev": "Scroll left",
+    "scrollNext": "Scroll right",
+    "pageError": "Local shelves could not be loaded. Playback was not changed.",
+    "sessionExpired": "Your session expired. Sign in again to load these shelves. Playback was not changed.",
+    "openAlbum": "Open %{name}",
+    "rails": {
+      "recentlyAdded": {
+        "title": "Recently added",
+        "source": "Local library · date added",
+        "empty": "Newly imported albums will appear here."
+      },
+      "recentlyPlayed": {
+        "title": "Recently played",
+        "source": "Local listening history",
+        "empty": "Play something from this library to fill this shelf."
+      },
+      "favourites": {
+        "title": "Favourites",
+        "source": "Local starred albums",
+        "empty": "Star an album to keep it on this shelf."
+      },
+      "discover": {
+        "title": "From this library",
+        "source": "Local random albums",
+        "empty": "Add albums to this library to explore them here."
+      }
+    }
+  },
+  "mixStudio": {
+    "title": "Mix Studio",
+    "subtitle": "Deterministic, preview-first mixes over the library you own. Nothing plays until you confirm.",
+    "modeGroupLabel": "Mix mode",
+    "previewListLabel": "Mix preview tracks",
+    "scope": {
+      "all": "Mixing from every library you can access",
+      "selected": "Mixing from %{count} selected libraries"
+    },
+    "modes": {
+      "pure_shuffle": {
+        "title": "Pure Shuffle",
+        "description": "Seeded, unbiased shuffle across your selected libraries. Same seed, same mix."
+      },
+      "rediscover": {
+        "title": "Rediscover",
+        "description": "Favours tracks you own but have not played recently."
+      },
+      "familiar_fresh": {
+        "title": "Familiar + Fresh",
+        "description": "Blends loved, familiar material with tracks you have played less."
+      }
+    },
+    "adventure": {
+      "label": "Familiar ↔ Fresh adventure",
+      "helper": "Toward Fresh weights the blend toward material you have played less.",
+      "familiar": "Familiar",
+      "fresh": "Fresh",
+      "disabledHint": "Select Familiar + Fresh to tune its blend."
+    },
+    "actions": {
+      "preview": "Preview this mix",
+      "retry": "Try again",
+      "tryAnother": "Try another seed",
+      "play": "Play this mix",
+      "playHint": "Replaces the current queue after you confirm."
+    },
+    "ready": "%{count} tracks · %{duration}. Your queue stays unchanged until you confirm.",
+    "degraded": "Some spacing or availability preferences could not be fully maintained.",
+    "empty": "This mix found no playable tracks in the selected libraries. Adjust the mode or library selection, then try again.",
+    "error": "The mix engine could not be reached. Playback was not changed.",
+    "sessionExpired": "Your session expired. Sign in again to preview mixes. Playback was not changed.",
+    "loading": "Loading mix preview",
+    "moreTracks": "and %{count} more",
+    "reasonFallback": "Picked for this mix"
   },
   "player": {
     "playListsText": "Play Queue",

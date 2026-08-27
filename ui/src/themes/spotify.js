@@ -125,6 +125,11 @@ export default {
         background: '#000',
         paddingTop: '10px',
       },
+      paper: {
+        backgroundColor: '#000',
+        color: '#fff',
+        borderRight: '1px solid #282828',
+      },
     },
     MuiTableRow: {
       root: {
@@ -300,6 +305,28 @@ export default {
         overflow: 'visible',
       },
     },
+    NDListenNow: {
+      root: {
+        backgroundImage:
+          'linear-gradient(135deg, rgba(29,185,84,0.28) 0%, rgba(24,24,24,0.94) 58%, #121212 100%)',
+      },
+      title: {
+        color: '#fff',
+      },
+    },
+    NDHomeRail: {
+      title: {
+        color: '#fff',
+      },
+      source: {
+        color: '#b3b3b3',
+      },
+    },
+    NDMediaCard: {
+      root: {
+        backgroundColor: '#181818',
+      },
+    },
     NDAudioPlayer: {
       audioTitle: {
         color: '#fff',
@@ -311,9 +338,6 @@ export default {
       songInfo: {
         fontSize: '0.675rem',
         color: '#b3b3b3',
-      },
-      player: {
-        border: '10px solid blue',
       },
     },
     NDLogin: {
@@ -424,6 +448,33 @@ export default {
     RaSidebar: {
       root: {
         height: 'initial',
+      },
+      fixed: {
+        backgroundColor: '#000',
+      },
+      drawerPaper: {
+        backgroundColor: '#000 !important',
+        color: '#fff',
+      },
+    },
+    RaMenuItemLink: {
+      root: {
+        minHeight: 48,
+        color: '#fff',
+        '& .MuiListItemIcon-root': {
+          color: '#fff',
+        },
+        '&:focus-visible': {
+          outline: '2px solid #1db954',
+          outlineOffset: 2,
+        },
+      },
+      active: {
+        color: '#fff',
+        backgroundColor: 'rgba(29, 185, 84, 0.16)',
+        '& .MuiListItemIcon-root': {
+          color: '#1db954',
+        },
       },
     },
   },

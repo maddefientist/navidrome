@@ -26,9 +26,10 @@ const useStyles = makeStyles((theme) => ({
     alignItems: 'center',
     justifyContent: 'center',
     listStyle: 'none',
-    padding: theme.spacing(0.5),
+    padding: 0,
     margin: 0,
-    height: 24,
+    minHeight: 44,
+    minWidth: 44,
   },
   button: {
     width: '2.5rem',
@@ -39,8 +40,11 @@ const useStyles = makeStyles((theme) => ({
     padding: 0,
   },
   mobileButton: {
-    width: 24,
-    height: 24,
+    boxSizing: 'border-box',
+    width: 44,
+    height: 44,
+    minWidth: 44,
+    minHeight: 44,
     padding: 0,
     margin: 0,
     display: 'flex',
@@ -59,7 +63,7 @@ const PlayerToolbar = ({ id, isRadio }) => {
   const dispatch = useDispatch()
   const { data, loading } = useGetOne('song', id, { enabled: !!id && !isRadio })
   const [toggleLove, toggling] = useToggleLove('song', data)
-  const isDesktop = useMediaQuery('(min-width:810px)')
+  const isDesktop = useMediaQuery((theme) => theme.breakpoints.up('md'))
   const classes = useStyles()
 
   const handlers = {

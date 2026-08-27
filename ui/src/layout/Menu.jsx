@@ -1,10 +1,16 @@
 import React, { useState } from 'react'
 import { useSelector } from 'react-redux'
+import { useLocation } from 'react-router-dom'
 import { Divider, makeStyles } from '@material-ui/core'
 import clsx from 'clsx'
 import { useTranslate, MenuItemLink, getResources } from 'react-admin'
 import ViewListIcon from '@material-ui/icons/ViewList'
 import AlbumIcon from '@material-ui/icons/Album'
+import HomeOutlinedIcon from '@material-ui/icons/HomeOutlined'
+import HomeIcon from '@material-ui/icons/Home'
+import LibraryMusicOutlinedIcon from '@material-ui/icons/LibraryMusicOutlined'
+import QueueMusicOutlinedIcon from '@material-ui/icons/QueueMusicOutlined'
+import QueueMusicIcon from '@material-ui/icons/QueueMusic'
 import SubMenu from './SubMenu'
 import { humanize, pluralize } from 'inflection'
 import albumLists from '../album/albumLists'
@@ -12,27 +18,69 @@ import PlaylistsSubMenu from './PlaylistsSubMenu'
 import LibrarySelector from '../common/LibrarySelector'
 import config from '../config'
 
-const useStyles = makeStyles((theme) => ({
-  root: {
-    marginTop: theme.spacing(1),
-    marginBottom: theme.spacing(1),
-    transition: theme.transitions.create('width', {
-      easing: theme.transitions.easing.sharp,
-      duration: theme.transitions.duration.leavingScreen,
-    }),
-    paddingBottom: (props) => (props.addPadding ? '80px' : '20px'),
-  },
-  open: {
-    width: 240,
-  },
-  closed: {
-    width: 55,
-  },
-  active: {
-    color: theme.palette.text.primary,
-    fontWeight: 'bold',
-  },
-}))
+const useStyles = makeStyles(
+  (theme) => ({
+    root: {
+      marginTop: theme.spacing(1),
+      marginBottom: theme.spacing(1),
+      transition: theme.transitions.create('width', {
+        easing: theme.transitions.easing.sharp,
+        duration: theme.transitions.duration.leavingScreen,
+      }),
+      paddingBottom: (props) =>
+        props.addPadding
+          ? 'calc(96px + env(safe-area-inset-bottom, 0px))'
+          : 'calc(24px + env(safe-area-inset-bottom, 0px))',
+    },
+    open: {
+      width: theme.sidebar?.width ?? 248,
+    },
+    closed: {
+      width: theme.sidebar?.closedWidth ?? 72,
+      boxSizing: 'border-box',
+      overflowX: 'hidden',
+      '& .MuiListItem-root': {
+        boxSizing: 'border-box',
+        // React Admin renders MenuItemLink labels as bare text nodes rather
+        // than ListItemText, so collapse their inherited text size while
+        // preserving the labelled tooltip and icon hit target.
+        fontSize: 0,
+        justifyContent: 'center',
+        paddingLeft: 0,
+        paddingRight: 0,
+      },
+      '& .MuiListItemIcon-root': {
+        minWidth: 56,
+        justifyContent: 'center',
+      },
+      '& .MuiTypography-root': {
+        display: 'none',
+      },
+    },
+    active: {
+      color: theme.palette.text.primary,
+      fontWeight: 700,
+      '& .MuiListItemIcon-root': {
+        color: 'inherit',
+      },
+    },
+    menuItem: {
+      minHeight: 48,
+      minWidth: 48,
+      borderRadius: theme.spacing(1),
+      margin: theme.spacing(0.25, 1),
+      color: theme.palette.text.primary,
+      '& .MuiListItemIcon-root': {
+        color: 'inherit',
+      },
+      '&:focus-visible': {
+        outline: `2px solid ${theme.palette.primary.main}`,
+        outlineOffset: 2,
+      },
+    },
+  }),
+  { name: 'NDMenu' },
+)
 
 const translatedResourceName = (resource, translate) =>
   translate(`resources.${resource.name}.name`, {
@@ -49,13 +97,17 @@ const translatedResourceName = (resource, translate) =>
 const Menu = ({ dense = false }) => {
   const open = useSelector((state) => state.admin.ui.sidebarOpen)
   const translate = useTranslate()
+  const location = useLocation()
   const queue = useSelector((state) => state.player?.queue)
   const classes = useStyles({ addPadding: queue.length > 0 })
   const resources = useSelector(getResources)
+  const listenNowActive = location.pathname === '/'
+  const mixesActive = location.pathname === '/mixes'
 
   // TODO State is not persisted in mobile when you close the sidebar menu. Move to redux?
   const [state, setState] = useState({
-    menuAlbumList: true,
+    menuCollection: true,
+    menuAlbumList: false,
     menuPlaylists: true,
     menuSharedPlaylists: true,
   })
@@ -68,6 +120,7 @@ const Menu = ({ dense = false }) => {
     <MenuItemLink
       key={resource.name}
       to={`/${resource.name}`}
+      className={classes.menuItem}
       activeClassName={classes.active}
       primaryText={translatedResourceName(resource, translate)}
       leftIcon={resource.icon || <ViewListIcon />}
@@ -92,6 +145,7 @@ const Menu = ({ dense = false }) => {
       <MenuItemLink
         key={albumListAddress}
         to={albumListAddress}
+        className={classes.menuItem}
         activeClassName={classes.active}
         primaryText={name}
         leftIcon={al.icon || <ViewListIcon />}
@@ -113,19 +167,48 @@ const Menu = ({ dense = false }) => {
       })}
     >
       {open && <LibrarySelector />}
-      <SubMenu
-        handleToggle={() => handleToggle('menuAlbumList')}
-        isOpen={state.menuAlbumList}
+      <MenuItemLink
+        to="/"
+        exact
+        className={classes.menuItem}
+        activeClassName={classes.active}
+        primaryText={translate('menu.listenNow', { _: 'Listen Now' })}
+        leftIcon={listenNowActive ? <HomeIcon /> : <HomeOutlinedIcon />}
         sidebarIsOpen={open}
-        name="menu.albumList"
-        icon={<AlbumIcon />}
+        dense={dense}
+      />
+      <MenuItemLink
+        to="/mixes"
+        exact
+        className={classes.menuItem}
+        activeClassName={classes.active}
+        primaryText={translate('menu.mixes', { _: 'Mix Studio' })}
+        leftIcon={mixesActive ? <QueueMusicIcon /> : <QueueMusicOutlinedIcon />}
+        sidebarIsOpen={open}
+        dense={dense}
+      />
+      <SubMenu
+        handleToggle={() => handleToggle('menuCollection')}
+        isOpen={state.menuCollection}
+        sidebarIsOpen={open}
+        name="menu.library"
+        icon={<LibraryMusicOutlinedIcon />}
         dense={dense}
       >
-        {Object.keys(albumLists).map((type) =>
-          renderAlbumMenuItemLink(type, albumLists[type]),
-        )}
+        {resources.filter(subItems(undefined)).map(renderResourceMenuItemLink)}
+        <SubMenu
+          handleToggle={() => handleToggle('menuAlbumList')}
+          isOpen={state.menuAlbumList}
+          sidebarIsOpen={open}
+          name="menu.albumList"
+          icon={<AlbumIcon />}
+          dense={dense}
+        >
+          {Object.keys(albumLists).map((type) =>
+            renderAlbumMenuItemLink(type, albumLists[type]),
+          )}
+        </SubMenu>
       </SubMenu>
-      {resources.filter(subItems(undefined)).map(renderResourceMenuItemLink)}
       {config.devSidebarPlaylists && open ? (
         <>
           <Divider />

@@ -9,9 +9,20 @@ import Notification from './Notification'
 import useCurrentTheme from '../themes/useCurrentTheme'
 import { useSearchRefocus } from '../common'
 
-const useStyles = makeStyles({
-  root: { paddingBottom: (props) => (props.addPadding ? '80px' : 0) },
-})
+const useStyles = makeStyles(
+  (theme) => ({
+    root: {
+      minHeight: '100vh',
+      '@supports (min-height: 100dvh)': {
+        minHeight: '100dvh',
+      },
+      backgroundColor: theme.palette.background.default,
+      paddingBottom: (props) =>
+        props.addPadding ? 'calc(96px + env(safe-area-inset-bottom, 0px))' : 0,
+    },
+  }),
+  { name: 'NDLayout' },
+)
 
 const Layout = (props) => {
   const theme = useCurrentTheme()

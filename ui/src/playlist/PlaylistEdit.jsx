@@ -12,6 +12,7 @@ import {
   SelectInput,
 } from 'react-admin'
 import { isWritable, Title } from '../common'
+import { SmartPlaylistBuilder } from './SmartPlaylistBuilder'
 
 const SyncFragment = ({ formData, variant, ...rest }) => {
   return (
@@ -62,6 +63,7 @@ const PlaylistEditForm = (props) => {
       <FormDataConsumer>
         {(formDataProps) => <SyncFragment {...formDataProps} />}
       </FormDataConsumer>
+      <SmartPlaylistBuilder source="rules" />
     </SimpleForm>
   )
 }

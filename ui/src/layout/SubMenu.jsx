@@ -79,7 +79,7 @@ const SubMenu = ({
         onClick={handleToggle}
       >
         <ListItemIcon className={classes.icon}>
-          {isOpen ? <ExpandMore /> : icon}
+          {sidebarIsOpen && isOpen ? <ExpandMore /> : icon}
         </ListItemIcon>
         <Typography variant="inherit" color="textSecondary">
           {translate(name)}

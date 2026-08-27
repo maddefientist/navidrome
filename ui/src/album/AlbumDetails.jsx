@@ -36,27 +36,34 @@ import { formatFullDate, intersperse } from '../utils'
 import AlbumExternalLinks from './AlbumExternalLinks'
 import { SafeHTML } from '../common/SafeHTML'
 
-const useStyles = makeStyles(
+// eslint-disable-next-line react-refresh/only-export-components
+export const useStyles = makeStyles(
   (theme) => ({
     root: {
+      minWidth: 0,
       [theme.breakpoints.down('xs')]: {
         padding: '0.7em',
-        minWidth: '20em',
       },
       [theme.breakpoints.up('sm')]: {
         padding: '1em',
-        minWidth: '32em',
       },
     },
     cardContents: {
       display: 'flex',
+      minWidth: 0,
+      [theme.breakpoints.down('xs')]: {
+        flexDirection: 'column',
+      },
     },
     details: {
       display: 'flex',
       flexDirection: 'column',
+      minWidth: 0,
+      flex: '1 1 auto',
     },
     content: {
       flex: '2 0 auto',
+      minWidth: 0,
     },
     coverParent: {
       [theme.breakpoints.down('xs')]: {
@@ -78,6 +85,7 @@ const useStyles = makeStyles(
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
+      flexShrink: 0,
     },
     cover: {
       objectFit: 'contain',
@@ -102,8 +110,14 @@ const useStyles = makeStyles(
       wordBreak: 'break-word',
       cursor: 'pointer',
     },
-    recordName: {},
-    recordArtist: {},
+    recordName: {
+      overflowWrap: 'break-word',
+      wordBreak: 'break-word',
+    },
+    recordArtist: {
+      overflowWrap: 'break-word',
+      wordBreak: 'break-word',
+    },
     recordMeta: {},
     genreList: {
       marginTop: theme.spacing(0.5),

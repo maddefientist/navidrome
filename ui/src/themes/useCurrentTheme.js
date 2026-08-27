@@ -1,23 +1,66 @@
 import { useSelector } from 'react-redux'
 import useMediaQuery from '@material-ui/core/useMediaQuery'
+import deepmerge from 'deepmerge'
 import themes from './index'
 import { AUTO_THEME_ID } from '../consts'
 import config from '../config'
 import { useEffect } from 'react'
 
+export const SIDEBAR_WIDTH = 248
+export const SIDEBAR_CLOSED_WIDTH = 72
+
+const SHELL_OVERRIDES = {
+  sidebar: {
+    width: SIDEBAR_WIDTH,
+    closedWidth: SIDEBAR_CLOSED_WIDTH,
+  },
+  overrides: {
+    RaLayout: {
+      root: {
+        minWidth: 0,
+      },
+      content: {
+        minWidth: 0,
+      },
+    },
+    RaList: {
+      content: {
+        minWidth: 0,
+        overflowX: 'auto',
+      },
+    },
+  },
+}
+
+// Cache keeps merged shell overrides referentially stable per base theme,
+// preventing React Admin from rebuilding on every render.
+const mergedThemeCache = new WeakMap()
+
+export const getShellThemedTheme = (baseTheme) => {
+  if (mergedThemeCache.has(baseTheme)) {
+    return mergedThemeCache.get(baseTheme)
+  }
+  const merged = deepmerge(baseTheme, SHELL_OVERRIDES)
+  mergedThemeCache.set(baseTheme, merged)
+  return merged
+}
+
 const useCurrentTheme = () => {
   const prefersLightMode = useMediaQuery('(prefers-color-scheme: light)')
   const theme = useSelector((state) => {
+    let baseTheme
     if (state.theme === AUTO_THEME_ID) {
-      return prefersLightMode ? themes.LightTheme : themes.DarkTheme
+      baseTheme = prefersLightMode ? themes.LightTheme : themes.DarkTheme
+    } else {
+      const themeName =
+        Object.keys(themes).find((t) => t === state.theme) ||
+        Object.keys(themes).find(
+          (t) => themes[t].themeName === config.defaultTheme,
+        ) ||
+        'DarkTheme'
+      baseTheme = themes[themeName]
     }
-    const themeName =
-      Object.keys(themes).find((t) => t === state.theme) ||
-      Object.keys(themes).find(
-        (t) => themes[t].themeName === config.defaultTheme,
-      ) ||
-      'DarkTheme'
-    return themes[themeName]
+    return getShellThemedTheme(baseTheme)
   })
 
   useEffect(() => {

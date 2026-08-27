@@ -37,6 +37,7 @@ import { detectBrowserProfile, decisionService } from '../transcode'
 
 const Player = () => {
   const theme = useCurrentTheme()
+  const muiTheme = useMemo(() => createMuiTheme(theme), [theme])
   const translate = useTranslate()
   const playerTheme = theme.player?.theme || 'dark'
   const dataProvider = useDataProvider()
@@ -48,7 +49,10 @@ const Player = () => {
   const currentTrackIdRef = useRef(null)
   const stoppedRef = useRef(false)
   const [audioInstance, setAudioInstance] = useState(null)
-  const isDesktop = useMediaQuery('(min-width:810px)')
+  // Pass a resolved query string (not a theme-context callback): Player can
+  // render before any outer MUI ThemeProvider exists (e.g. on the login
+  // route), which leaves useMediaQuery's context theme null.
+  const isDesktop = useMediaQuery(muiTheme.breakpoints.up('md'))
   const isMobilePlayer =
     /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
       navigator.userAgent,
@@ -454,7 +458,7 @@ const Player = () => {
   }, [audioInstance])
 
   return (
-    <ThemeProvider theme={createMuiTheme(theme)}>
+    <ThemeProvider theme={muiTheme}>
       <ReactJkMusicPlayer
         {...options}
         className={classes.player}

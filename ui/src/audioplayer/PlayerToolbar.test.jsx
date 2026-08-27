@@ -125,6 +125,28 @@ describe('<PlayerToolbar />', () => {
       expect(listItems[1].className).toContain('mobileListItem')
     })
 
+    it('gives mobile toolbar controls 44px hit areas without oversized icons', () => {
+      render(<PlayerToolbar id="song-1" />)
+
+      const saveQueueButton = screen.getByTestId('save-queue-button')
+      const loveButton = screen.getByTestId('love-button')
+      expect(saveQueueButton.className).toContain('mobileButton')
+      expect(loveButton.className).toContain('mobileButton')
+
+      const css = Array.from(document.querySelectorAll('style'))
+        .map((node) => node.textContent || '')
+        .join('\n')
+      expect(css).toMatch(/min-width:\s*44px/)
+      expect(css).toMatch(/min-height:\s*44px/)
+      expect(css).toMatch(/width:\s*44px/)
+      expect(css).toMatch(/height:\s*44px/)
+      expect(css).toMatch(/font-size:\s*18px/)
+
+      const icon = saveQueueButton.querySelector('svg')
+      expect(icon).toBeTruthy()
+      expect(icon.getAttribute('class')).toMatch(/mobileIcon/)
+    })
+
     it('disables save queue button when isRadio is true', () => {
       render(<PlayerToolbar id="song-1" isRadio={true} />)
 

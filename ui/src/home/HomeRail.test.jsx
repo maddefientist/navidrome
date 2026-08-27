@@ -1,0 +1,247 @@
+import React from 'react'
+import { fireEvent, render, screen } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
+import { ThemeProvider, createTheme } from '@material-ui/core/styles'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { HomeRail } from './HomeRail'
+
+vi.mock('../common', () => ({
+  OverflowTooltip: ({ children }) => children,
+  PlayButton: () => <button type="button">play</button>,
+}))
+
+vi.mock('../subsonic', () => ({
+  default: {
+    getCoverArtUrl: (record) => `cover-${record.id}`,
+  },
+}))
+
+vi.mock('react-admin', () => ({
+  useTranslate:
+    () =>
+    (key, options = {}) =>
+      options._ || key,
+}))
+
+const albums = [
+  { id: 'a1', name: 'Visible Album', albumArtist: 'Artist One' },
+  { id: 'a2', name: 'Missing Album', missing: true },
+]
+
+const renderRail = (props = {}) =>
+  render(
+    <MemoryRouter>
+      <ThemeProvider theme={createTheme()}>
+        <HomeRail
+          id="recentlyAdded"
+          title="Recently added"
+          sourceLabel="Local library · date added"
+          destination="/album/recentlyAdded"
+          items={albums}
+          {...props}
+        />
+      </ThemeProvider>
+    </MemoryRouter>,
+  )
+
+describe('HomeRail', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('links See all to the existing album destination and hides missing albums', () => {
+    renderRail()
+
+    expect(screen.getByTestId('see-all-recentlyAdded')).toHaveAttribute(
+      'href',
+      '/album/recentlyAdded',
+    )
+    expect(screen.getByText('Visible Album')).toBeInTheDocument()
+    expect(screen.queryByText('Missing Album')).not.toBeInTheDocument()
+    expect(screen.getByText('Local library · date added')).toBeInTheDocument()
+  })
+
+  it('reserves snap geometry while a local rail is loading', () => {
+    renderRail({ loading: true, items: [] })
+    const skeletons = screen.getAllByTestId('rail-skeleton-card')
+    expect(skeletons).toHaveLength(6)
+    expect(
+      screen.getByRole('status', { name: 'Loading albums' }),
+    ).toBeInTheDocument()
+  })
+
+  it('matches loaded MediaCard geometry for each skeleton', () => {
+    renderRail({ loading: true, items: [] })
+    const skeletons = screen.getAllByTestId('rail-skeleton-card')
+
+    skeletons.forEach((skeleton) => {
+      expect(getComputedStyle(skeleton).display).toBe('flex')
+      expect(getComputedStyle(skeleton).flexDirection).toBe('column')
+      // padded square artwork area followed by two text placeholders
+      expect(skeleton.children).toHaveLength(3)
+      const [cover, titleLine, subtitleLine] = skeleton.children
+      expect(getComputedStyle(cover).aspectRatio).toBe('1')
+      expect(getComputedStyle(titleLine).height).not.toBe('')
+      expect(getComputedStyle(subtitleLine).height).not.toBe('')
+    })
+  })
+
+  it('uses proximity snapping on the scroller so overflow stays contained', () => {
+    renderRail({ loading: true, items: [] })
+    const scroller = screen.getByRole('status', { name: 'Loading albums' })
+    expect(getComputedStyle(scroller).scrollSnapType).toContain('proximity')
+    expect(getComputedStyle(scroller).overflowX).toBe('auto')
+  })
+
+  it('renders an empty local shelf without inventing connected sources', () => {
+    renderRail({ items: [] })
+
+    expect(screen.getByText('No albums in this shelf yet.')).toBeInTheDocument()
+    expect(screen.queryByText(/listenbrainz/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/ollama/i)).not.toBeInTheDocument()
+  })
+
+  it('exposes a retry action when a local request fails', () => {
+    const onRetry = vi.fn()
+    renderRail({ items: [], error: true, onRetry })
+
+    expect(screen.queryByTestId('rail-skeleton-card')).not.toBeInTheDocument()
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Could not load this shelf.',
+    )
+    fireEvent.click(screen.getByRole('button', { name: /try again/i }))
+    expect(onRetry).toHaveBeenCalledTimes(1)
+  })
+
+  it('locks snap card wrappers to a fixed width regardless of content length', () => {
+    const longTitle = 'A'.repeat(300)
+    renderRail({
+      items: [{ id: 'long-1', name: longTitle, albumArtist: 'Artist' }],
+    })
+
+    const scroller = screen.getByTestId('home-rail-scroller-recentlyAdded')
+    const snapWrapper = scroller.firstElementChild
+    const style = getComputedStyle(snapWrapper)
+
+    expect(parseInt(style.minWidth, 10) || 0).toBe(0)
+    expect(style.width).toBe(style.maxWidth)
+    expect(parseInt(style.maxWidth, 10)).toBeLessThanOrEqual(156)
+  })
+
+  it('hides native scrollbar tracks while remaining keyboard/touch scrollable', () => {
+    renderRail()
+    const scroller = screen.getByTestId('home-rail-scroller-recentlyAdded')
+    const style = getComputedStyle(scroller)
+
+    expect(style.scrollbarWidth).toBe('none')
+    expect(style.overflowX).toBe('auto')
+    expect(scroller).toHaveAttribute('tabIndex', '0')
+    expect(scroller).toHaveAttribute('role', 'group')
+    expect(scroller).toHaveAccessibleName('Recently added')
+  })
+
+  it('keeps the compact status footprint within three card widths and loaded-card height', () => {
+    renderRail({ items: [] })
+    const status = screen
+      .getByText('No albums in this shelf yet.')
+      .closest('[role="status"]')
+    const style = getComputedStyle(status)
+
+    expect(parseInt(style.maxWidth, 10)).toBeLessThanOrEqual(156 * 3)
+    expect(parseInt(style.minHeight, 10)).toBeLessThanOrEqual(156)
+  })
+
+  it('shows accessible chevrons that scroll roughly three cards and respect reduced motion', () => {
+    renderRail()
+    const scroller = screen.getByTestId('home-rail-scroller-recentlyAdded')
+
+    Object.defineProperty(scroller, 'scrollWidth', {
+      configurable: true,
+      value: 2000,
+    })
+    Object.defineProperty(scroller, 'clientWidth', {
+      configurable: true,
+      value: 500,
+    })
+    Object.defineProperty(scroller, 'scrollLeft', {
+      configurable: true,
+      value: 100,
+    })
+    scroller.scrollBy = vi.fn()
+
+    fireEvent.scroll(scroller)
+
+    const nextButton = screen.getByTestId('scroll-next-recentlyAdded')
+    const prevButton = screen.getByTestId('scroll-prev-recentlyAdded')
+    expect(nextButton).toHaveAttribute('aria-label', 'Scroll right')
+    expect(prevButton).toHaveAttribute('aria-label', 'Scroll left')
+
+    fireEvent.click(nextButton)
+    expect(scroller.scrollBy).toHaveBeenCalledTimes(1)
+    const call = scroller.scrollBy.mock.calls[0][0]
+    expect(call.left).toBeGreaterThan(0)
+    expect(call.behavior).toBe('smooth')
+  })
+
+  it('uses instant scroll for chevrons when reduced motion is preferred', () => {
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      writable: true,
+      value: vi.fn((query) => ({
+        matches: query.includes('prefers-reduced-motion'),
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    })
+
+    renderRail()
+    const scroller = screen.getByTestId('home-rail-scroller-recentlyAdded')
+
+    Object.defineProperty(scroller, 'scrollWidth', {
+      configurable: true,
+      value: 2000,
+    })
+    Object.defineProperty(scroller, 'clientWidth', {
+      configurable: true,
+      value: 500,
+    })
+    Object.defineProperty(scroller, 'scrollLeft', {
+      configurable: true,
+      value: 100,
+    })
+    scroller.scrollBy = vi.fn()
+
+    fireEvent.scroll(scroller)
+
+    fireEvent.click(screen.getByTestId('scroll-next-recentlyAdded'))
+    expect(scroller.scrollBy.mock.calls[0][0].behavior).toBe('auto')
+  })
+
+  it('honors reduced motion on the snap scroller', () => {
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      writable: true,
+      value: vi.fn((query) => ({
+        matches: query.includes('prefers-reduced-motion'),
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    })
+
+    renderRail()
+    expect(screen.getByTestId('home-rail-recentlyAdded')).toHaveAttribute(
+      'data-reduced-motion',
+      'true',
+    )
+  })
+})

@@ -140,7 +140,13 @@ const CustomUserMenu = ({ onClick, ...rest }) => {
 }
 
 const AppBar = (props) => (
-  <RAAppBar {...props} container={Fragment} userMenu={<CustomUserMenu />} />
+  <RAAppBar
+    {...props}
+    container={Fragment}
+    color="inherit"
+    elevation={0}
+    userMenu={<CustomUserMenu />}
+  />
 )
 
 export default AppBar

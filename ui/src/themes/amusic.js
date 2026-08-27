@@ -48,6 +48,11 @@ export default {
         background: '#1d1d1d',
         borderRight: '1px solid #fff1',
       },
+      paper: {
+        backgroundColor: '#1d1d1d',
+        color: '#eee',
+        borderRight: '1px solid #fff1',
+      },
     },
     MuiToolbar: {
       root: {
@@ -147,6 +152,28 @@ export default {
         borderRadius: '6px',
       },
     },
+    NDListenNow: {
+      root: {
+        backgroundImage:
+          'linear-gradient(135deg, rgba(255,78,107,0.28) 0%, rgba(29,29,29,0.94) 58%, #1a1a1a 100%)',
+      },
+      title: {
+        color: '#eee',
+      },
+    },
+    NDHomeRail: {
+      title: {
+        color: '#eee',
+      },
+      source: {
+        color: '#ccc',
+      },
+    },
+    NDMediaCard: {
+      root: {
+        backgroundColor: '#222',
+      },
+    },
     NDLogin: {
       systemNameLink: {
         color: '#ff4e6b',
@@ -215,6 +242,35 @@ export default {
     RaBulkDeleteWithUndoButton: {
       deleteButton: {
         color: '#fff !important',
+      },
+    },
+    RaSidebar: {
+      fixed: {
+        backgroundColor: '#1d1d1d',
+      },
+      drawerPaper: {
+        backgroundColor: '#1d1d1d !important',
+        color: '#eee',
+      },
+    },
+    RaMenuItemLink: {
+      root: {
+        minHeight: 48,
+        color: '#eee',
+        '& .MuiListItemIcon-root': {
+          color: '#ff4e6b',
+        },
+        '&:focus-visible': {
+          outline: '2px solid #ff4e6b',
+          outlineOffset: 2,
+        },
+      },
+      active: {
+        color: '#eee',
+        backgroundColor: 'rgba(255, 78, 107, 0.16)',
+        '& .MuiListItemIcon-root': {
+          color: '#ff4e6b',
+        },
       },
     },
     RaPaginationActions: {
