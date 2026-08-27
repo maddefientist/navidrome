@@ -418,4 +418,53 @@ describe('MixStudio', () => {
     expect(screen.queryByTestId('confirm-mix-play')).not.toBeInTheDocument()
     expect(mockDispatch).not.toHaveBeenCalled()
   })
+
+  it('drops a stale preview when the adventure level changes', async () => {
+    mockHttpClient.mockResolvedValue({
+      json: previewPayload({ mode: 'familiar_fresh' }),
+    })
+    resolvePlayableSongs()
+    renderStudio()
+
+    fireEvent.click(screen.getByTestId('mode-card-familiar_fresh'))
+    fireEvent.click(screen.getByTestId('mix-preview-trigger'))
+    expect(
+      await screen.findByRole('list', { name: 'Mix preview tracks' }),
+    ).toBeInTheDocument()
+
+    fireEvent.keyDown(
+      screen.getByRole('slider', { name: 'Familiar ↔ Fresh adventure' }),
+      { key: 'End' },
+    )
+
+    expect(
+      screen.queryByRole('list', { name: 'Mix preview tracks' }),
+    ).not.toBeInTheDocument()
+    expect(screen.queryByTestId('confirm-mix-play')).not.toBeInTheDocument()
+    expect(mockDispatch).not.toHaveBeenCalled()
+  })
+
+  it('drops a stale preview when the selected library scope changes', async () => {
+    mockHttpClient.mockResolvedValue({ json: previewPayload() })
+    resolvePlayableSongs()
+    const view = renderStudio()
+
+    fireEvent.click(screen.getByTestId('mix-preview-trigger'))
+    expect(
+      await screen.findByRole('list', { name: 'Mix preview tracks' }),
+    ).toBeInTheDocument()
+
+    selectedLibraries = [9]
+    view.rerender(
+      <ThemeProvider theme={createTheme()}>
+        <MixStudio />
+      </ThemeProvider>,
+    )
+
+    expect(
+      screen.queryByRole('list', { name: 'Mix preview tracks' }),
+    ).not.toBeInTheDocument()
+    expect(screen.queryByTestId('confirm-mix-play')).not.toBeInTheDocument()
+    expect(mockDispatch).not.toHaveBeenCalled()
+  })
 })

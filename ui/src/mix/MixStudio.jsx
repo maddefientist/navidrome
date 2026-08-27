@@ -343,6 +343,16 @@ export const MixStudio = () => {
     }
   }, [])
 
+  useEffect(() => {
+    // A preview is valid only for the exact controls and library scope that
+    // produced it. Invalidate both visible and in-flight results whenever
+    // either input changes so confirmation can never play a stale mix.
+    requestID.current += 1
+    setPreview(null)
+    setStatus('idle')
+    setErrorKind(null)
+  }, [adventure, libraryIds])
+
   const selectMode = useCallback((nextMode) => {
     setMode(nextMode)
     // A preview generated for a different mode is stale; drop it so the
