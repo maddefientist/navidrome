@@ -1,6 +1,8 @@
 // Package mix implements deterministic, inspectable mix generation over a
-// caller-scoped candidate pool. The first production mode is pure_shuffle:
-// a seeded library shuffle with best-effort artist spacing.
+// caller-scoped candidate pool. Supported modes:
+//   - pure_shuffle: unbiased seeded library shuffle.
+//   - rediscover: favors never-played tracks, then long-unplayed tracks.
+//   - familiar_fresh: a tunable blend of familiar and fresh material.
 package mix
 
 import (
@@ -9,6 +11,7 @@ import (
 	"crypto/sha256"
 	"errors"
 	"slices"
+	"time"
 )
 
 const (
@@ -19,15 +22,42 @@ const (
 	// MaxLibraryIDs bounds caller-provided library selection filters.
 	MaxLibraryIDs = 100
 
+	// MinAdventure is the smallest allowed familiar_fresh Adventure value.
+	MinAdventure = 0
+	// MaxAdventure is the largest allowed familiar_fresh Adventure value.
+	MaxAdventure = 100
+
+	// FamiliarMinRating is the minimum rating that classifies a track as familiar.
+	FamiliarMinRating = 4
+	// FamiliarMinPlayCount is the minimum play count that classifies a track as familiar.
+	FamiliarMinPlayCount = 3
+
 	// ModePureShuffle is unbiased local random selection with a reproducibility seed.
 	ModePureShuffle Mode = "pure_shuffle"
+	// ModeRediscover favors accessible tracks that are unplayed or long-unplayed.
+	ModeRediscover Mode = "rediscover"
+	// ModeFamiliarFresh blends familiar (loved/high-rated/frequently played)
+	// material with fresh (underplayed) material at a tunable ratio.
+	ModeFamiliarFresh Mode = "familiar_fresh"
 
 	// ReasonLibraryShuffle is attached to every pure_shuffle selection.
 	ReasonLibraryShuffle ReasonCode = "library_shuffle"
+	// ReasonRediscoverNeverPlayed is attached to rediscover selections with a zero play count.
+	ReasonRediscoverNeverPlayed ReasonCode = "rediscover_never_played"
+	// ReasonRediscoverStale is attached to rediscover selections that have been played
+	// but not recently, or that have a low play count.
+	ReasonRediscoverStale ReasonCode = "rediscover_stale"
+	// ReasonFamiliarFreshFamiliar is attached to familiar_fresh selections classified as familiar.
+	ReasonFamiliarFreshFamiliar ReasonCode = "familiar_fresh_familiar"
+	// ReasonFamiliarFreshFresh is attached to familiar_fresh selections classified as fresh.
+	ReasonFamiliarFreshFresh ReasonCode = "familiar_fresh_fresh"
 
 	// DegradationArtistSpacing is reported when artist spacing cannot be maintained
 	// without dropping eligible tracks.
 	DegradationArtistSpacing = "artist_spacing"
+	// DegradationAdventureTarget is reported when the requested familiar/fresh
+	// proportion could not be met because one bucket had too few candidates.
+	DegradationAdventureTarget = "adventure_target_unmet"
 )
 
 var (
@@ -39,6 +69,8 @@ var (
 	ErrUnsupportedMode = errors.New("mix: unsupported mode")
 	// ErrInvalidLibraryIDs is returned for non-positive or excessive library IDs.
 	ErrInvalidLibraryIDs = errors.New("mix: library IDs must be positive and contain at most 100 entries")
+	// ErrInvalidAdventure is returned when MixSpec.Adventure is outside 0..100 for familiar_fresh.
+	ErrInvalidAdventure = errors.New("mix: adventure must be between 0 and 100")
 )
 
 // Mode identifies a mix generation strategy.
@@ -54,13 +86,24 @@ type MixSpec struct {
 	Limit         int    `json:"limit"`
 	ArtistSpacing int    `json:"artistSpacing"`
 	LibraryIDs    []int  `json:"libraryIds,omitempty"`
+	// Adventure tunes familiar_fresh: 0 is fully familiar, 100 is fully fresh.
+	// Ignored by other modes.
+	Adventure int `json:"adventure,omitempty"`
 }
 
 // Candidate is a caller-scoped, already access-checked media item.
 type Candidate struct {
 	ID       string
 	ArtistID string
+	AlbumID  string
 	Missing  bool
+
+	// PlayCount, PlayDate, Rating, and Starred are source-backed local
+	// signals used for deterministic scoring in rediscover and familiar_fresh.
+	PlayCount int64
+	PlayDate  *time.Time
+	Rating    int
+	Starred   bool
 }
 
 // Entry is one inspectable track in a generated mix.
@@ -90,33 +133,56 @@ func (e *Engine) Validate(spec MixSpec) error {
 	return validateSpec(spec)
 }
 
-// Generate builds a pure_shuffle mix from spec and candidates.
-// The input slice is never mutated. Identical seed and logical candidate set
-// (unique playable IDs) produce identical ordered IDs regardless of input order.
+// Generate builds a mix from spec and candidates. The input slice is never
+// mutated. Identical seed and logical candidate set (unique playable IDs with
+// identical scoring fields) produce identical ordered IDs regardless of input
+// order.
 func (e *Engine) Generate(spec MixSpec, candidates []Candidate) (MixResult, error) {
 	if err := e.Validate(spec); err != nil {
 		return MixResult{}, err
 	}
 
 	pool := eligibleCandidates(candidates)
-	ranked := rankCandidates(spec.Seed, pool)
-	selected, degraded := applyArtistSpacing(ranked, spec.ArtistSpacing, spec.Limit)
+
+	var (
+		ranked         []Candidate
+		reasonByID     map[string]ReasonCode
+		modeDegradedBy []string
+	)
+	switch spec.Mode {
+	case ModeRediscover:
+		ranked, reasonByID = rankRediscover(spec.Seed, pool)
+	case ModeFamiliarFresh:
+		ranked, reasonByID, modeDegradedBy = rankFamiliarFresh(spec.Seed, pool, spec.Adventure, spec.Limit)
+	default:
+		ranked = rankCandidates(spec.Seed, pool)
+		reasonByID = uniformReason(pool, ReasonLibraryShuffle)
+	}
+
+	selected, spacingDegraded := applyArtistSpacing(ranked, spec.ArtistSpacing, spec.Limit)
 
 	entries := make([]Entry, len(selected))
 	for i, c := range selected {
-		entries[i] = Entry{ID: c.ID, Reason: ReasonLibraryShuffle}
+		entries[i] = Entry{ID: c.ID, Reason: reasonByID[c.ID]}
+	}
+
+	degradations := slices.Clone(modeDegradedBy)
+	if spacingDegraded {
+		degradations = append(degradations, DegradationArtistSpacing)
 	}
 
 	result := MixResult{Entries: entries}
-	if degraded {
+	if len(degradations) > 0 {
 		result.Degraded = true
-		result.Degradations = []string{DegradationArtistSpacing}
+		result.Degradations = degradations
 	}
 	return result, nil
 }
 
 func validateSpec(spec MixSpec) error {
-	if spec.Mode != ModePureShuffle {
+	switch spec.Mode {
+	case ModePureShuffle, ModeRediscover, ModeFamiliarFresh:
+	default:
 		return ErrUnsupportedMode
 	}
 	if spec.Seed == "" {
@@ -131,6 +197,11 @@ func validateSpec(spec MixSpec) error {
 	for _, id := range spec.LibraryIDs {
 		if id <= 0 {
 			return ErrInvalidLibraryIDs
+		}
+	}
+	if spec.Mode == ModeFamiliarFresh {
+		if spec.Adventure < MinAdventure || spec.Adventure > MaxAdventure {
+			return ErrInvalidAdventure
 		}
 	}
 	return nil
@@ -161,11 +232,22 @@ func eligibleCandidates(candidates []Candidate) []Candidate {
 	return uniq
 }
 
+func uniformReason(pool []Candidate, reason ReasonCode) map[string]ReasonCode {
+	out := make(map[string]ReasonCode, len(pool))
+	for _, c := range pool {
+		out[c.ID] = reason
+	}
+	return out
+}
+
 type rankedCandidate struct {
 	cand Candidate
 	key  [sha256.Size]byte
 }
 
+// rankCandidates orders candidates purely by their seeded hash key. The
+// result depends only on spec.Seed and the logical candidate set, never on
+// input slice order.
 func rankCandidates(seed string, candidates []Candidate) []Candidate {
 	ranked := make([]rankedCandidate, len(candidates))
 	for i, c := range candidates {
@@ -190,6 +272,154 @@ func rankKey(seed, id string) [sha256.Size]byte {
 	buf = append(buf, 0)
 	buf = append(buf, id...)
 	return sha256.Sum256(buf)
+}
+
+// rankRediscover orders candidates by: never-played first, then oldest play
+// date first, then lowest play count first, with the seeded rank as the
+// final, purely deterministic tie-breaker. It never reads the wall clock.
+func rankRediscover(seed string, pool []Candidate) ([]Candidate, map[string]ReasonCode) {
+	type scored struct {
+		cand        Candidate
+		neverPlayed bool
+		playDate    time.Time
+		key         [sha256.Size]byte
+	}
+
+	reasonByID := make(map[string]ReasonCode, len(pool))
+	scoredList := make([]scored, len(pool))
+	for i, c := range pool {
+		never := c.PlayCount == 0
+		var pd time.Time
+		if c.PlayDate != nil {
+			pd = *c.PlayDate
+		}
+		scoredList[i] = scored{cand: c, neverPlayed: never, playDate: pd, key: rankKey(seed, c.ID)}
+		if never {
+			reasonByID[c.ID] = ReasonRediscoverNeverPlayed
+		} else {
+			reasonByID[c.ID] = ReasonRediscoverStale
+		}
+	}
+
+	slices.SortFunc(scoredList, func(a, b scored) int {
+		if a.neverPlayed != b.neverPlayed {
+			if a.neverPlayed {
+				return -1
+			}
+			return 1
+		}
+		if !a.neverPlayed {
+			if n := a.playDate.Compare(b.playDate); n != 0 {
+				return n
+			}
+			if n := cmp.Compare(a.cand.PlayCount, b.cand.PlayCount); n != 0 {
+				return n
+			}
+		}
+		if n := bytes.Compare(a.key[:], b.key[:]); n != 0 {
+			return n
+		}
+		return cmp.Compare(a.cand.ID, b.cand.ID)
+	})
+
+	out := make([]Candidate, len(scoredList))
+	for i, s := range scoredList {
+		out[i] = s.cand
+	}
+	return out, reasonByID
+}
+
+func isFamiliar(c Candidate) bool {
+	return c.Starred || c.Rating >= FamiliarMinRating || c.PlayCount >= FamiliarMinPlayCount
+}
+
+// rankFamiliarFresh splits the pool into familiar and fresh buckets, targets
+// the fresh proportion requested by adventure (0..100), tops up from the
+// other bucket when one is insufficient, and deterministically interleaves
+// the two selections. It reports DegradationAdventureTarget when the
+// requested proportion could not be honored.
+func rankFamiliarFresh(seed string, pool []Candidate, adventure, limit int) ([]Candidate, map[string]ReasonCode, []string) {
+	fresh := make([]Candidate, 0, len(pool))
+	familiar := make([]Candidate, 0, len(pool))
+	for _, c := range pool {
+		if isFamiliar(c) {
+			familiar = append(familiar, c)
+		} else {
+			fresh = append(fresh, c)
+		}
+	}
+
+	freshRanked := rankCandidates(seed, fresh)
+	familiarRanked := rankCandidates(seed, familiar)
+
+	wantFresh := (limit*adventure + 50) / 100
+	if wantFresh > limit {
+		wantFresh = limit
+	}
+	if wantFresh < 0 {
+		wantFresh = 0
+	}
+	wantFamiliar := limit - wantFresh
+
+	takeFresh := min(wantFresh, len(freshRanked))
+	takeFamiliar := min(wantFamiliar, len(familiarRanked))
+	remaining := limit - takeFresh - takeFamiliar
+
+	var degradations []string
+	if remaining > 0 {
+		extraFresh := min(remaining, len(freshRanked)-takeFresh)
+		takeFresh += extraFresh
+		remaining -= extraFresh
+		extraFamiliar := min(remaining, len(familiarRanked)-takeFamiliar)
+		takeFamiliar += extraFamiliar
+		remaining -= extraFamiliar
+		if extraFresh > 0 || extraFamiliar > 0 {
+			degradations = append(degradations, DegradationAdventureTarget)
+		}
+	}
+
+	freshSelected := freshRanked[:takeFresh]
+	familiarSelected := familiarRanked[:takeFamiliar]
+
+	reasonByID := make(map[string]ReasonCode, takeFresh+takeFamiliar)
+	for _, c := range freshSelected {
+		reasonByID[c.ID] = ReasonFamiliarFreshFresh
+	}
+	for _, c := range familiarSelected {
+		reasonByID[c.ID] = ReasonFamiliarFreshFamiliar
+	}
+
+	merged := interleave(freshSelected, familiarSelected)
+	return merged, reasonByID, degradations
+}
+
+// interleave merges two already-ordered slices into one, distributing picks
+// proportionally to their lengths using an integer Bresenham-style
+// comparison. The result depends only on len(a), len(b), and the existing
+// order of each slice.
+func interleave(a, b []Candidate) []Candidate {
+	na, nb := len(a), len(b)
+	out := make([]Candidate, 0, na+nb)
+	i, j := 0, 0
+	for i < na || j < nb {
+		pickA := false
+		switch {
+		case i >= na:
+			pickA = false
+		case j >= nb:
+			pickA = true
+		default:
+			pickA = int64(i+1)*int64(nb) <= int64(j+1)*int64(na)
+		}
+		if pickA {
+			out = append(out, a[i])
+			i++
+		} else {
+			out = append(out, b[j])
+			j++
+		}
+	}
+	return out
 }
 
 func applyArtistSpacing(ranked []Candidate, spacing, limit int) ([]Candidate, bool) {

@@ -5,6 +5,7 @@ import (
 	"slices"
 	"strconv"
 	"testing"
+	"time"
 )
 
 func TestGenerateValidation(t *testing.T) {
@@ -589,4 +590,353 @@ func spacingViolations(res MixResult, pool []Candidate, spacing int) int {
 		}
 	}
 	return viol
+}
+
+func TestValidateNewModes(t *testing.T) {
+	t.Parallel()
+	eng := NewEngine()
+	pool := []Candidate{{ID: "a", ArtistID: "art-a"}}
+
+	tests := []struct {
+		name    string
+		spec    MixSpec
+		wantErr error
+	}{
+		{
+			name:    "rediscover valid",
+			spec:    MixSpec{Mode: ModeRediscover, Seed: "seed", Limit: 10},
+			wantErr: nil,
+		},
+		{
+			name:    "familiar_fresh valid at adventure zero",
+			spec:    MixSpec{Mode: ModeFamiliarFresh, Seed: "seed", Limit: 10, Adventure: MinAdventure},
+			wantErr: nil,
+		},
+		{
+			name:    "familiar_fresh valid at adventure one hundred",
+			spec:    MixSpec{Mode: ModeFamiliarFresh, Seed: "seed", Limit: 10, Adventure: MaxAdventure},
+			wantErr: nil,
+		},
+		{
+			name:    "familiar_fresh adventure below range",
+			spec:    MixSpec{Mode: ModeFamiliarFresh, Seed: "seed", Limit: 10, Adventure: -1},
+			wantErr: ErrInvalidAdventure,
+		},
+		{
+			name:    "familiar_fresh adventure above range",
+			spec:    MixSpec{Mode: ModeFamiliarFresh, Seed: "seed", Limit: 10, Adventure: MaxAdventure + 1},
+			wantErr: ErrInvalidAdventure,
+		},
+		{
+			name:    "pure_shuffle ignores out-of-range adventure",
+			spec:    MixSpec{Mode: ModePureShuffle, Seed: "seed", Limit: 10, Adventure: 500},
+			wantErr: nil,
+		},
+		{
+			name:    "rediscover ignores out-of-range adventure",
+			spec:    MixSpec{Mode: ModeRediscover, Seed: "seed", Limit: 10, Adventure: -50},
+			wantErr: nil,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			_, err := eng.Generate(tc.spec, pool)
+			if !errors.Is(err, tc.wantErr) {
+				t.Fatalf("Generate() error = %v, want %v", err, tc.wantErr)
+			}
+		})
+	}
+}
+
+func mustTime(t *testing.T, s string) time.Time {
+	t.Helper()
+	tm, err := time.Parse(time.RFC3339, s)
+	if err != nil {
+		t.Fatalf("parse time %q: %v", s, err)
+	}
+	return tm
+}
+
+func TestRediscoverOrdering(t *testing.T) {
+	t.Parallel()
+	eng := NewEngine()
+
+	old := mustTime(t, "2020-01-01T00:00:00Z")
+	recent := mustTime(t, "2024-01-01T00:00:00Z")
+
+	pool := []Candidate{
+		{ID: "recent-high-count", ArtistID: "a1", PlayCount: 10, PlayDate: &recent},
+		{ID: "old-low-count", ArtistID: "a2", PlayCount: 1, PlayDate: &old},
+		{ID: "never-played-1", ArtistID: "a3", PlayCount: 0},
+		{ID: "never-played-2", ArtistID: "a4", PlayCount: 0},
+		{ID: "old-high-count", ArtistID: "a5", PlayCount: 20, PlayDate: &old},
+	}
+
+	res, err := eng.Generate(MixSpec{Mode: ModeRediscover, Seed: "seed", Limit: 5}, pool)
+	if err != nil {
+		t.Fatalf("Generate() unexpected error: %v", err)
+	}
+	ids := idsOf(res)
+
+	neverPlayedIdx := map[string]int{}
+	for i, id := range ids {
+		if id == "never-played-1" || id == "never-played-2" {
+			neverPlayedIdx[id] = i
+		}
+	}
+	if len(neverPlayedIdx) != 2 {
+		t.Fatalf("expected both never-played tracks present, got %v", ids)
+	}
+	oldLowIdx := slices.Index(ids, "old-low-count")
+	oldHighIdx := slices.Index(ids, "old-high-count")
+	recentHighIdx := slices.Index(ids, "recent-high-count")
+
+	for _, i := range neverPlayedIdx {
+		if i >= oldLowIdx || i >= oldHighIdx || i >= recentHighIdx {
+			t.Fatalf("never-played track not prioritized first: ids=%v", ids)
+		}
+	}
+	// Same old play date, lower play count should come before higher play count.
+	if oldLowIdx >= oldHighIdx {
+		t.Fatalf("lower play count should rank before higher play count on same date: ids=%v", ids)
+	}
+	// Oldest play date should rank ahead of the most recent play date.
+	if oldHighIdx >= recentHighIdx {
+		t.Fatalf("older play date should rank before more recent play date: ids=%v", ids)
+	}
+
+	reasons := map[string]ReasonCode{}
+	for _, e := range res.Entries {
+		reasons[e.ID] = e.Reason
+	}
+	if reasons["never-played-1"] != ReasonRediscoverNeverPlayed || reasons["never-played-2"] != ReasonRediscoverNeverPlayed {
+		t.Fatalf("expected never-played reason codes, got %v", reasons)
+	}
+	if reasons["old-low-count"] != ReasonRediscoverStale || reasons["old-high-count"] != ReasonRediscoverStale || reasons["recent-high-count"] != ReasonRediscoverStale {
+		t.Fatalf("expected stale reason codes for played tracks, got %v", reasons)
+	}
+}
+
+func rediscoverPool(n int) []Candidate {
+	base, err := time.Parse(time.RFC3339, "2021-06-01T00:00:00Z")
+	if err != nil {
+		panic(err)
+	}
+	out := make([]Candidate, n)
+	for i := range n {
+		var pd *time.Time
+		count := int64(i % 5)
+		if count > 0 {
+			t := base.AddDate(0, 0, i)
+			pd = &t
+		}
+		out[i] = Candidate{
+			ID:        "rid-" + strconv.Itoa(i),
+			ArtistID:  "artist-" + strconv.Itoa(i%6),
+			PlayCount: count,
+			PlayDate:  pd,
+		}
+	}
+	return out
+}
+
+func TestRediscoverDeterminismAndOrderIndependence(t *testing.T) {
+	t.Parallel()
+	eng := NewEngine()
+	spec := MixSpec{Mode: ModeRediscover, Seed: "rediscover-seed", Limit: 15, ArtistSpacing: 1}
+	pool := rediscoverPool(30)
+
+	want, err := eng.Generate(spec, pool)
+	if err != nil {
+		t.Fatalf("Generate() unexpected error: %v", err)
+	}
+	if len(want.Entries) != 15 {
+		t.Fatalf("len(entries) = %d, want 15", len(want.Entries))
+	}
+
+	tests := []struct {
+		name string
+		pool []Candidate
+	}{
+		{name: "repeat call", pool: pool},
+		{name: "reversed", pool: reversed(pool)},
+		{name: "rotated", pool: rotated(pool, 7)},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			got, err := eng.Generate(spec, tc.pool)
+			if err != nil {
+				t.Fatalf("Generate() unexpected error: %v", err)
+			}
+			if !slices.Equal(idsOf(got), idsOf(want)) {
+				t.Fatalf("order-dependent or non-deterministic result: got %v want %v", idsOf(got), idsOf(want))
+			}
+		})
+	}
+}
+
+func familiarFreshPool(nFamiliar, nFresh int) []Candidate {
+	out := make([]Candidate, 0, nFamiliar+nFresh)
+	for i := range nFamiliar {
+		out = append(out, Candidate{
+			ID:       "fam-" + strconv.Itoa(i),
+			ArtistID: "fam-artist-" + strconv.Itoa(i%4),
+			Starred:  true,
+		})
+	}
+	for i := range nFresh {
+		out = append(out, Candidate{
+			ID:       "fresh-" + strconv.Itoa(i),
+			ArtistID: "fresh-artist-" + strconv.Itoa(i%4),
+		})
+	}
+	return out
+}
+
+func TestFamiliarFreshProportions(t *testing.T) {
+	t.Parallel()
+	eng := NewEngine()
+	pool := familiarFreshPool(20, 20)
+
+	t.Run("adventure zero is fully familiar", func(t *testing.T) {
+		t.Parallel()
+		res, err := eng.Generate(MixSpec{Mode: ModeFamiliarFresh, Seed: "seed", Limit: 10, Adventure: 0}, pool)
+		if err != nil {
+			t.Fatalf("Generate() unexpected error: %v", err)
+		}
+		for _, e := range res.Entries {
+			if e.Reason != ReasonFamiliarFreshFamiliar {
+				t.Fatalf("entry %q reason = %q, want %q", e.ID, e.Reason, ReasonFamiliarFreshFamiliar)
+			}
+		}
+		if res.Degraded {
+			t.Fatalf("unexpected degradation %v", res.Degradations)
+		}
+	})
+
+	t.Run("adventure one hundred is fully fresh", func(t *testing.T) {
+		t.Parallel()
+		res, err := eng.Generate(MixSpec{Mode: ModeFamiliarFresh, Seed: "seed", Limit: 10, Adventure: 100}, pool)
+		if err != nil {
+			t.Fatalf("Generate() unexpected error: %v", err)
+		}
+		for _, e := range res.Entries {
+			if e.Reason != ReasonFamiliarFreshFresh {
+				t.Fatalf("entry %q reason = %q, want %q", e.ID, e.Reason, ReasonFamiliarFreshFresh)
+			}
+		}
+		if res.Degraded {
+			t.Fatalf("unexpected degradation %v", res.Degradations)
+		}
+	})
+
+	t.Run("adventure fifty splits evenly", func(t *testing.T) {
+		t.Parallel()
+		res, err := eng.Generate(MixSpec{Mode: ModeFamiliarFresh, Seed: "seed", Limit: 10, Adventure: 50}, pool)
+		if err != nil {
+			t.Fatalf("Generate() unexpected error: %v", err)
+		}
+		var familiar, fresh int
+		for _, e := range res.Entries {
+			switch e.Reason {
+			case ReasonFamiliarFreshFamiliar:
+				familiar++
+			case ReasonFamiliarFreshFresh:
+				fresh++
+			default:
+				t.Fatalf("unexpected reason %q", e.Reason)
+			}
+		}
+		if familiar != 5 || fresh != 5 {
+			t.Fatalf("familiar=%d fresh=%d, want 5/5", familiar, fresh)
+		}
+		if res.Degraded {
+			t.Fatalf("unexpected degradation %v", res.Degradations)
+		}
+	})
+}
+
+func TestFamiliarFreshTopUpDegradation(t *testing.T) {
+	t.Parallel()
+	eng := NewEngine()
+	// Only 2 fresh candidates available but adventure requests far more than that.
+	pool := familiarFreshPool(20, 2)
+
+	res, err := eng.Generate(MixSpec{Mode: ModeFamiliarFresh, Seed: "seed", Limit: 10, Adventure: 100}, pool)
+	if err != nil {
+		t.Fatalf("Generate() unexpected error: %v", err)
+	}
+	if len(res.Entries) != 10 {
+		t.Fatalf("len(entries) = %d, want 10 (top-up should fill from familiar pool)", len(res.Entries))
+	}
+	if !res.Degraded {
+		t.Fatal("expected degraded=true when adventure target cannot be met")
+	}
+	if !slices.Contains(res.Degradations, DegradationAdventureTarget) {
+		t.Fatalf("degradations = %v, want to include %q", res.Degradations, DegradationAdventureTarget)
+	}
+	var fresh, familiar int
+	for _, e := range res.Entries {
+		if e.Reason == ReasonFamiliarFreshFresh {
+			fresh++
+		} else if e.Reason == ReasonFamiliarFreshFamiliar {
+			familiar++
+		}
+	}
+	if fresh != 2 {
+		t.Fatalf("fresh = %d, want 2 (all available fresh candidates used)", fresh)
+	}
+	if familiar != 8 {
+		t.Fatalf("familiar = %d, want 8 (topped up from familiar pool)", familiar)
+	}
+}
+
+func TestFamiliarFreshDeterminismAndOrderIndependence(t *testing.T) {
+	t.Parallel()
+	eng := NewEngine()
+	spec := MixSpec{Mode: ModeFamiliarFresh, Seed: "ff-seed", Limit: 16, ArtistSpacing: 1, Adventure: 35}
+	pool := familiarFreshPool(25, 25)
+
+	want, err := eng.Generate(spec, pool)
+	if err != nil {
+		t.Fatalf("Generate() unexpected error: %v", err)
+	}
+	if len(want.Entries) != 16 {
+		t.Fatalf("len(entries) = %d, want 16", len(want.Entries))
+	}
+
+	tests := []struct {
+		name string
+		pool []Candidate
+	}{
+		{name: "repeat call", pool: pool},
+		{name: "reversed", pool: reversed(pool)},
+		{name: "rotated", pool: rotated(pool, 9)},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			got, err := eng.Generate(spec, tc.pool)
+			if err != nil {
+				t.Fatalf("Generate() unexpected error: %v", err)
+			}
+			if !slices.Equal(idsOf(got), idsOf(want)) {
+				t.Fatalf("order-dependent or non-deterministic result: got %v want %v", idsOf(got), idsOf(want))
+			}
+			if !slices.Equal(reasonsOf(got), reasonsOf(want)) {
+				t.Fatalf("reasons drifted: got %v want %v", reasonsOf(got), reasonsOf(want))
+			}
+		})
+	}
+}
+
+func reasonsOf(res MixResult) []ReasonCode {
+	out := make([]ReasonCode, len(res.Entries))
+	for i, e := range res.Entries {
+		out[i] = e.Reason
+	}
+	return out
 }

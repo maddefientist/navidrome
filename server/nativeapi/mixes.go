@@ -13,7 +13,13 @@ import (
 	"github.com/navidrome/navidrome/model"
 )
 
-const maxMixPreviewBody = 64 << 10
+const (
+	maxMixPreviewBody = 64 << 10
+	// candidatePoolMultiplier and maxCandidatePool bound the preview query so a
+	// mix preview never loads the whole library: min(limit*8, 4000).
+	candidatePoolMultiplier = 8
+	maxCandidatePool        = 4000
+)
 
 func (api *Router) addMixPreviewRoute(r chi.Router) {
 	r.Post("/mix/preview", api.previewMix)
@@ -34,7 +40,13 @@ func (api *Router) previewMix(w http.ResponseWriter, r *http.Request) {
 	if len(spec.LibraryIDs) > 0 {
 		filters = append(filters, squirrel.Eq{"library_id": spec.LibraryIDs})
 	}
-	files, err := api.ds.MediaFile(r.Context()).GetAll(model.QueryOptions{Filters: filters})
+	poolMax := min(spec.Limit*candidatePoolMultiplier, maxCandidatePool)
+	files, err := api.ds.MediaFile(r.Context()).GetAll(model.QueryOptions{
+		Filters: filters,
+		Sort:    "random",
+		Seed:    spec.Seed,
+		Max:     poolMax,
+	})
 	if err != nil {
 		log.Error(r.Context(), "Error loading mix candidates", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
@@ -44,9 +56,14 @@ func (api *Router) previewMix(w http.ResponseWriter, r *http.Request) {
 	candidates := make([]mix.Candidate, len(files))
 	for i, mf := range files {
 		candidates[i] = mix.Candidate{
-			ID:       mf.ID,
-			ArtistID: mf.ArtistID,
-			Missing:  mf.Missing,
+			ID:        mf.ID,
+			ArtistID:  mf.ArtistID,
+			AlbumID:   mf.AlbumID,
+			Missing:   mf.Missing,
+			PlayCount: mf.PlayCount,
+			PlayDate:  mf.PlayDate,
+			Rating:    mf.Rating,
+			Starred:   mf.Starred,
 		}
 	}
 

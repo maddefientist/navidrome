@@ -200,6 +200,8 @@ var _ = Describe("POST /mix/preview", func() {
 		Entry("limit too large", mix.MixSpec{Mode: mix.ModePureShuffle, Seed: "repeatable", Limit: mix.MaxLimit + 1}),
 		Entry("unsupported mode", mix.MixSpec{Mode: "instant_mix", Seed: "repeatable", Limit: 2}),
 		Entry("invalid library id", mix.MixSpec{Mode: mix.ModePureShuffle, Seed: "repeatable", Limit: 2, LibraryIDs: []int{-1}}),
+		Entry("familiar_fresh adventure below range", mix.MixSpec{Mode: mix.ModeFamiliarFresh, Seed: "repeatable", Limit: 2, Adventure: -1}),
+		Entry("familiar_fresh adventure above range", mix.MixSpec{Mode: mix.ModeFamiliarFresh, Seed: "repeatable", Limit: 2, Adventure: 101}),
 	)
 
 	It("constrains the preview to requested libraries", func() {
@@ -249,6 +251,98 @@ var _ = Describe("POST /mix/preview", func() {
 		Expect(strings.ToLower(w.Body.String())).ToNot(ContainSubstring("sql"))
 		Expect(strings.ToLower(w.Body.String())).ToNot(ContainSubstring("database"))
 		Expect(strings.ToLower(w.Body.String())).ToNot(ContainSubstring("repository"))
+		Expect(pqRepo.Queue).To(BeNil())
+	})
+
+	It("bounds the candidate pool query to min(limit*8, 4000) with seeded random sorting", func() {
+		body, err := json.Marshal(mix.MixSpec{
+			Mode:  mix.ModePureShuffle,
+			Seed:  "repeatable",
+			Limit: 2,
+		})
+		Expect(err).ToNot(HaveOccurred())
+
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, createAuthenticatedRequest(body))
+
+		Expect(w.Code).To(Equal(http.StatusOK))
+		Expect(mfRepo.Options.Sort).To(Equal("random"))
+		Expect(mfRepo.Options.Seed).To(Equal("repeatable"))
+		Expect(mfRepo.Options.Max).To(Equal(16))
+		Expect(mfRepo.Options.Filters).To(Equal(squirrel.And{squirrel.Eq{"missing": false}}))
+	})
+
+	It("caps the candidate pool query at 4000 when limit*8 would exceed it", func() {
+		body, err := json.Marshal(mix.MixSpec{
+			Mode:  mix.ModePureShuffle,
+			Seed:  "repeatable",
+			Limit: mix.MaxLimit,
+		})
+		Expect(err).ToNot(HaveOccurred())
+
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, createAuthenticatedRequest(body))
+
+		Expect(w.Code).To(Equal(http.StatusOK))
+		Expect(mfRepo.Options.Max).To(Equal(4000))
+	})
+
+	It("returns a deterministic rediscover preview without mutating the queue", func() {
+		spec := mix.MixSpec{
+			Mode:  mix.ModeRediscover,
+			Seed:  "repeatable",
+			Limit: 2,
+		}
+		body, err := json.Marshal(spec)
+		Expect(err).ToNot(HaveOccurred())
+
+		first := httptest.NewRecorder()
+		router.ServeHTTP(first, createAuthenticatedRequest(body))
+		Expect(first.Code).To(Equal(http.StatusOK))
+
+		second := httptest.NewRecorder()
+		router.ServeHTTP(second, createAuthenticatedRequest(body))
+		Expect(second.Code).To(Equal(http.StatusOK))
+		Expect(second.Body.Bytes()).To(Equal(first.Body.Bytes()))
+
+		var got mix.MixResult
+		Expect(json.Unmarshal(first.Body.Bytes(), &got)).To(Succeed())
+		ids := make([]string, len(got.Entries))
+		for i, entry := range got.Entries {
+			ids[i] = entry.ID
+			Expect(entry.Reason).To(BeElementOf(mix.ReasonRediscoverNeverPlayed, mix.ReasonRediscoverStale))
+		}
+		Expect(ids).ToNot(ContainElement("missing-1"))
+		Expect(pqRepo.Queue).To(BeNil())
+	})
+
+	It("returns a deterministic familiar_fresh preview without mutating the queue", func() {
+		spec := mix.MixSpec{
+			Mode:      mix.ModeFamiliarFresh,
+			Seed:      "repeatable",
+			Limit:     2,
+			Adventure: 50,
+		}
+		body, err := json.Marshal(spec)
+		Expect(err).ToNot(HaveOccurred())
+
+		first := httptest.NewRecorder()
+		router.ServeHTTP(first, createAuthenticatedRequest(body))
+		Expect(first.Code).To(Equal(http.StatusOK))
+
+		second := httptest.NewRecorder()
+		router.ServeHTTP(second, createAuthenticatedRequest(body))
+		Expect(second.Code).To(Equal(http.StatusOK))
+		Expect(second.Body.Bytes()).To(Equal(first.Body.Bytes()))
+
+		var got mix.MixResult
+		Expect(json.Unmarshal(first.Body.Bytes(), &got)).To(Succeed())
+		ids := make([]string, len(got.Entries))
+		for i, entry := range got.Entries {
+			ids[i] = entry.ID
+			Expect(entry.Reason).To(BeElementOf(mix.ReasonFamiliarFreshFamiliar, mix.ReasonFamiliarFreshFresh))
+		}
+		Expect(ids).ToNot(ContainElement("missing-1"))
 		Expect(pqRepo.Queue).To(BeNil())
 	})
 })
