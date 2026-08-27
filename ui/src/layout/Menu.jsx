@@ -39,6 +39,10 @@ const useStyles = makeStyles(
       overflowX: 'hidden',
       '& .MuiListItem-root': {
         boxSizing: 'border-box',
+        // React Admin renders MenuItemLink labels as bare text nodes rather
+        // than ListItemText, so collapse their inherited text size while
+        // preserving the labelled tooltip and icon hit target.
+        fontSize: 0,
         justifyContent: 'center',
         paddingLeft: 0,
         paddingRight: 0,

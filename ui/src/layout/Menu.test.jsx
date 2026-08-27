@@ -113,6 +113,7 @@ describe('<Menu />', () => {
     const css = injectedCss()
 
     expect(css).toMatch(/\.MuiListItem-root[^}]*justify-content:\s*center/)
+    expect(css).toMatch(/\.MuiListItem-root[^}]*font-size:\s*0/)
     expect(css).toMatch(/\.MuiListItem-root[^}]*padding-left:\s*0/)
     expect(css).toMatch(/\.MuiListItem-root[^}]*padding-right:\s*0/)
     expect(css).toMatch(/\.MuiListItemIcon-root[^}]*min-width:\s*56px/)
