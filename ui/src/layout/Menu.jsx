@@ -31,10 +31,25 @@ const useStyles = makeStyles(
           : 'calc(24px + env(safe-area-inset-bottom, 0px))',
     },
     open: {
-      width: 248,
+      width: theme.sidebar?.width ?? 248,
     },
     closed: {
-      width: 56,
+      width: theme.sidebar?.closedWidth ?? 72,
+      boxSizing: 'border-box',
+      overflowX: 'hidden',
+      '& .MuiListItem-root': {
+        boxSizing: 'border-box',
+        justifyContent: 'center',
+        paddingLeft: 0,
+        paddingRight: 0,
+      },
+      '& .MuiListItemIcon-root': {
+        minWidth: 56,
+        justifyContent: 'center',
+      },
+      '& .MuiTypography-root': {
+        display: 'none',
+      },
     },
     active: {
       color: theme.palette.text.primary,

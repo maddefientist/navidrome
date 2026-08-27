@@ -34,15 +34,15 @@ const injectedCss = () =>
     .map((node) => node.textContent || '')
     .join('\n')
 
-const renderMenu = (queue = []) => {
+const renderMenu = (queue = [], { sidebarOpen = true, theme } = {}) => {
   const store = createStore(() => ({
-    admin: { ui: { sidebarOpen: true } },
+    admin: { ui: { sidebarOpen } },
     player: { queue },
     resources: [],
   }))
   return render(
     <Provider store={store}>
-      <ThemeProvider theme={createTheme()}>
+      <ThemeProvider theme={theme || createTheme()}>
         <Menu />
       </ThemeProvider>
     </Provider>,
@@ -67,5 +67,62 @@ describe('<Menu />', () => {
     const paddingBottom = getComputedStyle(container.firstChild).paddingBottom
     expect(paddingBottom).toContain('calc(96px')
     expect(paddingBottom).toContain('safe-area-inset-bottom')
+  })
+
+  it('reads the open/closed widths from the shared theme.sidebar contract', () => {
+    const shellTheme = createTheme({ sidebar: { width: 248, closedWidth: 72 } })
+
+    const { container: openContainer } = renderMenu([], {
+      sidebarOpen: true,
+      theme: shellTheme,
+    })
+    expect(getComputedStyle(openContainer.firstChild).width).toBe('248px')
+
+    const { container: closedContainer } = renderMenu([], {
+      sidebarOpen: false,
+      theme: shellTheme,
+    })
+    expect(getComputedStyle(closedContainer.firstChild).width).toBe('72px')
+  })
+
+  it('falls back to the 248/72 contract when theme.sidebar is missing', () => {
+    const { container: openContainer } = renderMenu([], { sidebarOpen: true })
+    expect(getComputedStyle(openContainer.firstChild).width).toBe('248px')
+
+    const { container: closedContainer } = renderMenu([], {
+      sidebarOpen: false,
+    })
+    expect(getComputedStyle(closedContainer.firstChild).width).toBe('72px')
+  })
+
+  it('leaves room for the 56px MUI icon slot within the closed width', () => {
+    const shellTheme = createTheme({ sidebar: { width: 248, closedWidth: 72 } })
+    const { container } = renderMenu([], {
+      sidebarOpen: false,
+      theme: shellTheme,
+    })
+
+    const closedWidth = parseFloat(getComputedStyle(container.firstChild).width)
+    const menuItemMarginX = shellTheme.spacing(1) * 2
+    const availableForIcon = closedWidth - menuItemMarginX
+    expect(availableForIcon).toBeGreaterThanOrEqual(56)
+  })
+
+  it('removes collapsed-row padding and labels so the icon slot is contained', () => {
+    renderMenu([], { sidebarOpen: false })
+    const css = injectedCss()
+
+    expect(css).toMatch(/\.MuiListItem-root[^}]*justify-content:\s*center/)
+    expect(css).toMatch(/\.MuiListItem-root[^}]*padding-left:\s*0/)
+    expect(css).toMatch(/\.MuiListItem-root[^}]*padding-right:\s*0/)
+    expect(css).toMatch(/\.MuiListItemIcon-root[^}]*min-width:\s*56px/)
+    expect(css).toMatch(/\.MuiTypography-root[^}]*display:\s*none/)
+  })
+
+  it('keeps a 48px minimum hit target on menu items', () => {
+    renderMenu([])
+    const css = injectedCss()
+    expect(css).toMatch(/min-height:\s*48px/)
+    expect(css).toMatch(/min-width:\s*48px/)
   })
 })

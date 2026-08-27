@@ -33,17 +33,20 @@ import config from '../config'
 import ExpandInfoDialog from '../dialogs/ExpandInfoDialog'
 import { removeAlbumCommentsFromSongs } from './utils.js'
 
-const useStyles = makeStyles(
+// eslint-disable-next-line react-refresh/only-export-components
+export const useStyles = makeStyles(
   (theme) => ({
     root: {},
     main: {
       display: 'flex',
+      minWidth: 0,
     },
     content: {
       marginTop: 0,
       transition: theme.transitions.create('margin-top'),
       position: 'relative',
       flex: '1 1 auto',
+      minWidth: 0,
       [theme.breakpoints.down('xs')]: {
         boxShadow: 'none',
       },

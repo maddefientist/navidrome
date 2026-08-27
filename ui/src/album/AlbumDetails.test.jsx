@@ -3,7 +3,8 @@ import { describe, test, expect, beforeEach, afterEach } from 'vitest'
 import { render } from '@testing-library/react'
 import { RecordContextProvider } from 'react-admin'
 import { useMediaQuery } from '@material-ui/core'
-import { Details } from './AlbumDetails'
+import { ThemeProvider, createTheme } from '@material-ui/core/styles'
+import { Details, useStyles } from './AlbumDetails'
 
 // Mock useMediaQuery
 vi.mock('@material-ui/core', async () => {
@@ -341,5 +342,48 @@ describe('Details component', () => {
 
       expect(container).toMatchSnapshot()
     })
+  })
+})
+
+describe('AlbumDetails shell CSS contract', () => {
+  const StylesProbe = () => {
+    const classes = useStyles()
+    return (
+      <div>
+        <div data-testid="root" className={classes.root} />
+        <div data-testid="cardContents" className={classes.cardContents} />
+        <div data-testid="details" className={classes.details} />
+        <div data-testid="content" className={classes.content} />
+        <div data-testid="recordName" className={classes.recordName} />
+        <div data-testid="recordArtist" className={classes.recordArtist} />
+      </div>
+    )
+  }
+
+  const renderProbe = () =>
+    render(
+      <ThemeProvider theme={createTheme()}>
+        <StylesProbe />
+      </ThemeProvider>,
+    )
+
+  test('root has no minWidth floor', () => {
+    const { getByTestId } = renderProbe()
+    expect(getComputedStyle(getByTestId('root')).minWidth).toBe('0')
+  })
+
+  test('cardContents and details are shrink-safe with minWidth 0', () => {
+    const { getByTestId } = renderProbe()
+    expect(getComputedStyle(getByTestId('cardContents')).minWidth).toBe('0')
+    expect(getComputedStyle(getByTestId('details')).minWidth).toBe('0')
+    expect(getComputedStyle(getByTestId('content')).minWidth).toBe('0')
+  })
+
+  test('long album/artist text wraps instead of overflowing', () => {
+    const { getByTestId } = renderProbe()
+    const nameStyle = getComputedStyle(getByTestId('recordName'))
+    const artistStyle = getComputedStyle(getByTestId('recordArtist'))
+    expect(nameStyle.overflowWrap).toBe('break-word')
+    expect(artistStyle.overflowWrap).toBe('break-word')
   })
 })
