@@ -11,6 +11,7 @@ import {
   useRedirect,
 } from 'react-admin'
 import { Title } from '../common'
+import { SmartPlaylistBuilder } from './SmartPlaylistBuilder'
 
 const PlaylistCreate = (props) => {
   const { basePath } = props
@@ -35,6 +36,7 @@ const PlaylistCreate = (props) => {
         <TextInput source="name" validate={required()} />
         <TextInput multiline source="comment" />
         <BooleanInput source="public" initialValue={true} />
+        <SmartPlaylistBuilder source="rules" />
       </SimpleForm>
     </Create>
   )

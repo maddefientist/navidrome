@@ -240,6 +240,47 @@
         "song_exist": "There are duplicates being added to the playlist. Would you like to add the duplicates or skip them?",
         "noPlaylistsFound": "No playlists found",
         "noPlaylists": "No playlists available"
+      },
+      "smart": {
+        "toggleLabel": "Smart playlist",
+        "toggleHelp": "Smart playlists update automatically from your local metadata and listening annotations (plays, favourites, dates added), instead of a fixed list of songs.",
+        "conjunctionLabel": "Match",
+        "conjunctionAll": "All conditions",
+        "conjunctionAny": "Any condition",
+        "conditionsLegend": "Conditions",
+        "conditionLegend": "Condition %{index}",
+        "addCondition": "Add condition",
+        "removeCondition": "Remove condition %{index}",
+        "fieldLabel": "Field",
+        "operatorLabel": "Operator",
+        "valueLabel": "Value",
+        "valueMin": "Min",
+        "valueMax": "Max",
+        "sortLabel": "Sort by",
+        "sortNone": "No sort",
+        "orderLabel": "Order",
+        "limitLabel": "Limit",
+        "presetsLabel": "Start from a preset:",
+        "presets": {
+          "recentlyPlayed": "Recently Played",
+          "unplayed": "Unplayed",
+          "lovedButForgotten": "Loved but Forgotten",
+          "freshArrivals": "Fresh Arrivals"
+        },
+        "schema": {
+          "loading": "Loading smart playlist fields…",
+          "error": "Could not load smart playlist fields.",
+          "retry": "Retry"
+        },
+        "errors": {
+          "noConditions": "Add at least one complete condition.",
+          "incompleteCondition": "Complete all fields for every condition.",
+          "unsupportedField": "Field \"%{field}\" is not supported.",
+          "unsupportedOperator": "Operator \"%{operator}\" is not supported.",
+          "invalidValue": "Enter a valid value for every condition.",
+          "invalidLimit": "Limit must be between 1 and 5000.",
+          "schemaUnavailable": "Smart playlist fields could not be loaded. Retry before saving."
+        }
       }
     },
     "radio": {
