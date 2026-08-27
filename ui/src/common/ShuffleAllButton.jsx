@@ -28,6 +28,13 @@ import { httpClient } from '../dataProvider'
 import subsonic from '../subsonic'
 import { formatDuration } from '../utils'
 import { createShuffleSeed } from './shuffleSeed'
+import {
+  buildMixSpec,
+  MIX_PREVIEW_ENDPOINT,
+  normalizePreviewPayload,
+  sanitizeLibraryIds,
+  toPlayableItems,
+} from '../mix'
 
 const useStyles = makeStyles((theme) => ({
   dialogContent: {
@@ -143,26 +150,12 @@ const useStyles = makeStyles((theme) => ({
   },
 }))
 
-const previewSpec = (filters) => {
-  const requestedLibraries = filters?.library_id
-  const libraryIDs = (
-    Array.isArray(requestedLibraries)
-      ? requestedLibraries
-      : requestedLibraries
-        ? [requestedLibraries]
-        : []
-  )
-    .map(Number)
-    .filter((id) => Number.isInteger(id) && id > 0)
-
-  return {
+const previewSpec = (filters) =>
+  buildMixSpec({
     mode: 'pure_shuffle',
     seed: createShuffleSeed(),
-    limit: 100,
-    artistSpacing: 2,
-    ...(libraryIDs.length > 0 ? { libraryIds: libraryIDs } : {}),
-  }
-}
+    libraryIds: sanitizeLibraryIds(filters),
+  })
 
 export const ShuffleAllButton = ({ filters, className }) => {
   const classes = useStyles()
@@ -206,17 +199,18 @@ export const ShuffleAllButton = ({ filters, className }) => {
     }
 
     try {
-      const { json } = await httpClient('/api/mix/preview', {
+      const { json } = await httpClient(MIX_PREVIEW_ENDPOINT, {
         method: 'POST',
         body: JSON.stringify(previewSpec(filters)),
       })
-      const entries = Array.isArray(json?.entries) ? json.entries : []
-      const ids = entries.map((entry) => entry.id).filter(Boolean)
-      if (ids.length === 0) {
-        throw new Error('empty mix preview')
-      }
       if (requestID.current !== currentRequest) {
         return
+      }
+
+      const { tracks, degraded, degradations } = normalizePreviewPayload(json)
+      const ids = tracks.map((track) => track.id).filter(Boolean)
+      if (ids.length === 0) {
+        throw new Error('empty mix preview')
       }
 
       const { data: songs = [] } = await dataProvider.getMany('song', { ids })
@@ -224,14 +218,7 @@ export const ShuffleAllButton = ({ filters, className }) => {
         return
       }
 
-      const playableByID = new Map(
-        songs
-          .filter((song) => song?.id && !song.missing)
-          .map((song) => [song.id, song]),
-      )
-      const items = entries
-        .map((entry) => ({ entry, song: playableByID.get(entry.id) }))
-        .filter(({ song }) => Boolean(song))
+      const items = toPlayableItems(tracks, songs)
 
       if (items.length === 0) {
         throw new Error('empty playable mix preview')
@@ -239,10 +226,8 @@ export const ShuffleAllButton = ({ filters, className }) => {
 
       setPreview({
         items,
-        degraded: Boolean(json?.degraded) || items.length !== entries.length,
-        degradations: Array.isArray(json?.degradations)
-          ? json.degradations
-          : [],
+        degraded: degraded || items.length !== tracks.length,
+        degradations,
       })
     } catch (_error) {
       if (requestID.current !== currentRequest) {
@@ -288,7 +273,7 @@ export const ShuffleAllButton = ({ filters, className }) => {
     (total, { song }) => total + (Number(song.duration) || 0),
     0,
   )
-  const reasons = [...new Set(visibleItems.map(({ entry }) => entry.reason))]
+  const reasons = [...new Set(visibleItems.map(({ track }) => track.reason))]
   const sharedReason = reasons.length === 1 ? reasons[0] : null
 
   return (
@@ -371,7 +356,7 @@ export const ShuffleAllButton = ({ filters, className }) => {
                 className={classes.previewList}
                 data-loading={loading}
               >
-                {visibleItems.map(({ entry, song }) => (
+                {visibleItems.map(({ track, song }) => (
                   <ListItem
                     key={song.id}
                     disableGutters
@@ -399,7 +384,7 @@ export const ShuffleAllButton = ({ filters, className }) => {
                           <>
                             {' · '}
                             {translate(
-                              `resources.song.mix.reason.${entry.reason}`,
+                              `resources.song.mix.reason.${track.reason}`,
                               { _: 'Seeded library shuffle' },
                             )}
                           </>

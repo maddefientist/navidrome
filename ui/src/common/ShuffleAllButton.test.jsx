@@ -315,4 +315,35 @@ describe('ShuffleAllButton', () => {
     const action = mockDispatch.mock.calls[0][0]
     expect(Object.keys(action.data)).toEqual(['song-1'])
   })
+
+  it('consumes the frozen tracks document via the shared mix client', async () => {
+    mockHttpClient.mockResolvedValue({
+      json: {
+        mode: 'pure_shuffle',
+        seed: 'stable-ui-seed',
+        tracks: ['song-2', 'song-1'],
+        reasons: {
+          'song-2': 'library_shuffle',
+          'song-1': 'library_shuffle',
+        },
+        degraded: false,
+      },
+    })
+    renderButton()
+    openPreview()
+
+    const list = await screen.findByRole('list', {
+      name: 'shuffle-preview-tracks',
+    })
+    expect(within(list).getAllByRole('listitem')).toHaveLength(2)
+    expect(screen.getByText(/2 tracks · 07:00/)).toBeInTheDocument()
+    expect(mockDispatch).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByTestId('confirm-shuffle-preview'))
+    expect(mockDispatch).toHaveBeenCalledTimes(1)
+    expect(Object.keys(mockDispatch.mock.calls[0][0].data)).toEqual([
+      'song-2',
+      'song-1',
+    ])
+  })
 })

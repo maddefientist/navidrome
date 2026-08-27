@@ -1,5 +1,5 @@
 import React from 'react'
-import { render } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import { Provider } from 'react-redux'
 import { createStore } from 'redux'
 import { ThemeProvider, createTheme } from '@material-ui/core/styles'
@@ -11,7 +11,11 @@ vi.mock('react-admin', () => ({
     () =>
     (key, options = {}) =>
       options._ || key,
-  MenuItemLink: () => null,
+  MenuItemLink: ({ to, primaryText }) => (
+    <a href={to} data-testid={`menu-link-${to}`}>
+      {primaryText}
+    </a>
+  ),
   getResources: (state) => state.resources || [],
 }))
 
@@ -50,6 +54,15 @@ const renderMenu = (queue = [], { sidebarOpen = true, theme } = {}) => {
 }
 
 describe('<Menu />', () => {
+  it('exposes Mix Studio as a first-class sidebar destination at /mixes', () => {
+    renderMenu([])
+
+    const link = screen.getByTestId('menu-link-/mixes')
+    expect(link).toBeInTheDocument()
+    expect(link).toHaveAttribute('href', '/mixes')
+    expect(link).toHaveTextContent('Mix Studio')
+  })
+
   it('reserves its normal spacing plus the bottom safe-area when idle', () => {
     const { container } = renderMenu([])
     const css = injectedCss()

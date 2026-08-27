@@ -648,6 +648,7 @@
     },
     "albumList": "Albums",
     "listenNow": "Listen Now",
+    "mixes": "Mix Studio",
     "playlists": "Playlists",
     "sharedPlaylists": "Shared Playlists",
     "about": "About"
@@ -689,6 +690,52 @@
         "empty": "Add albums to this library to explore them here."
       }
     }
+  },
+  "mixStudio": {
+    "title": "Mix Studio",
+    "subtitle": "Deterministic, preview-first mixes over the library you own. Nothing plays until you confirm.",
+    "modeGroupLabel": "Mix mode",
+    "previewListLabel": "Mix preview tracks",
+    "scope": {
+      "all": "Mixing from every library you can access",
+      "selected": "Mixing from %{count} selected libraries"
+    },
+    "modes": {
+      "pure_shuffle": {
+        "title": "Pure Shuffle",
+        "description": "Seeded, unbiased shuffle across your selected libraries. Same seed, same mix."
+      },
+      "rediscover": {
+        "title": "Rediscover",
+        "description": "Favours tracks you own but have not played recently."
+      },
+      "familiar_fresh": {
+        "title": "Familiar + Fresh",
+        "description": "Blends loved, familiar material with tracks you have played less."
+      }
+    },
+    "adventure": {
+      "label": "Familiar ↔ Fresh adventure",
+      "helper": "Toward Fresh weights the blend toward material you have played less.",
+      "familiar": "Familiar",
+      "fresh": "Fresh",
+      "disabledHint": "Select Familiar + Fresh to tune its blend."
+    },
+    "actions": {
+      "preview": "Preview this mix",
+      "retry": "Try again",
+      "tryAnother": "Try another seed",
+      "play": "Play this mix",
+      "playHint": "Replaces the current queue after you confirm."
+    },
+    "ready": "%{count} tracks · %{duration}. Your queue stays unchanged until you confirm.",
+    "degraded": "Some spacing or availability preferences could not be fully maintained.",
+    "empty": "This mix found no playable tracks in the selected libraries. Adjust the mode or library selection, then try again.",
+    "error": "The mix engine could not be reached. Playback was not changed.",
+    "sessionExpired": "Your session expired. Sign in again to preview mixes. Playback was not changed.",
+    "loading": "Loading mix preview",
+    "moreTracks": "and %{count} more",
+    "reasonFallback": "Picked for this mix"
   },
   "player": {
     "playListsText": "Play Queue",

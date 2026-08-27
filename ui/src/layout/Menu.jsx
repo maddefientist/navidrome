@@ -9,6 +9,8 @@ import AlbumIcon from '@material-ui/icons/Album'
 import HomeOutlinedIcon from '@material-ui/icons/HomeOutlined'
 import HomeIcon from '@material-ui/icons/Home'
 import LibraryMusicOutlinedIcon from '@material-ui/icons/LibraryMusicOutlined'
+import QueueMusicOutlinedIcon from '@material-ui/icons/QueueMusicOutlined'
+import QueueMusicIcon from '@material-ui/icons/QueueMusic'
 import SubMenu from './SubMenu'
 import { humanize, pluralize } from 'inflection'
 import albumLists from '../album/albumLists'
@@ -100,6 +102,7 @@ const Menu = ({ dense = false }) => {
   const classes = useStyles({ addPadding: queue.length > 0 })
   const resources = useSelector(getResources)
   const listenNowActive = location.pathname === '/'
+  const mixesActive = location.pathname === '/mixes'
 
   // TODO State is not persisted in mobile when you close the sidebar menu. Move to redux?
   const [state, setState] = useState({
@@ -171,6 +174,16 @@ const Menu = ({ dense = false }) => {
         activeClassName={classes.active}
         primaryText={translate('menu.listenNow', { _: 'Listen Now' })}
         leftIcon={listenNowActive ? <HomeIcon /> : <HomeOutlinedIcon />}
+        sidebarIsOpen={open}
+        dense={dense}
+      />
+      <MenuItemLink
+        to="/mixes"
+        exact
+        className={classes.menuItem}
+        activeClassName={classes.active}
+        primaryText={translate('menu.mixes', { _: 'Mix Studio' })}
+        leftIcon={mixesActive ? <QueueMusicIcon /> : <QueueMusicOutlinedIcon />}
         sidebarIsOpen={open}
         dense={dense}
       />
