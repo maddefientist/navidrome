@@ -113,6 +113,115 @@ describe('HomeRail', () => {
     expect(onRetry).toHaveBeenCalledTimes(1)
   })
 
+  it('locks snap card wrappers to a fixed width regardless of content length', () => {
+    const longTitle = 'A'.repeat(300)
+    renderRail({
+      items: [{ id: 'long-1', name: longTitle, albumArtist: 'Artist' }],
+    })
+
+    const scroller = screen.getByTestId('home-rail-scroller-recentlyAdded')
+    const snapWrapper = scroller.firstElementChild
+    const style = getComputedStyle(snapWrapper)
+
+    expect(parseInt(style.minWidth, 10) || 0).toBe(0)
+    expect(style.width).toBe(style.maxWidth)
+    expect(parseInt(style.maxWidth, 10)).toBeLessThanOrEqual(156)
+  })
+
+  it('hides native scrollbar tracks while remaining keyboard/touch scrollable', () => {
+    renderRail()
+    const scroller = screen.getByTestId('home-rail-scroller-recentlyAdded')
+    const style = getComputedStyle(scroller)
+
+    expect(style.scrollbarWidth).toBe('none')
+    expect(style.overflowX).toBe('auto')
+    expect(scroller).toHaveAttribute('tabIndex', '0')
+    expect(scroller).toHaveAttribute('role', 'group')
+    expect(scroller).toHaveAccessibleName('Recently added')
+  })
+
+  it('keeps the compact status footprint within three card widths and loaded-card height', () => {
+    renderRail({ items: [] })
+    const status = screen
+      .getByText('No albums in this shelf yet.')
+      .closest('[role="status"]')
+    const style = getComputedStyle(status)
+
+    expect(parseInt(style.maxWidth, 10)).toBeLessThanOrEqual(156 * 3)
+    expect(parseInt(style.minHeight, 10)).toBeLessThanOrEqual(156)
+  })
+
+  it('shows accessible chevrons that scroll roughly three cards and respect reduced motion', () => {
+    renderRail()
+    const scroller = screen.getByTestId('home-rail-scroller-recentlyAdded')
+
+    Object.defineProperty(scroller, 'scrollWidth', {
+      configurable: true,
+      value: 2000,
+    })
+    Object.defineProperty(scroller, 'clientWidth', {
+      configurable: true,
+      value: 500,
+    })
+    Object.defineProperty(scroller, 'scrollLeft', {
+      configurable: true,
+      value: 100,
+    })
+    scroller.scrollBy = vi.fn()
+
+    fireEvent.scroll(scroller)
+
+    const nextButton = screen.getByTestId('scroll-next-recentlyAdded')
+    const prevButton = screen.getByTestId('scroll-prev-recentlyAdded')
+    expect(nextButton).toHaveAttribute('aria-label', 'Scroll right')
+    expect(prevButton).toHaveAttribute('aria-label', 'Scroll left')
+
+    fireEvent.click(nextButton)
+    expect(scroller.scrollBy).toHaveBeenCalledTimes(1)
+    const call = scroller.scrollBy.mock.calls[0][0]
+    expect(call.left).toBeGreaterThan(0)
+    expect(call.behavior).toBe('smooth')
+  })
+
+  it('uses instant scroll for chevrons when reduced motion is preferred', () => {
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      writable: true,
+      value: vi.fn((query) => ({
+        matches: query.includes('prefers-reduced-motion'),
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    })
+
+    renderRail()
+    const scroller = screen.getByTestId('home-rail-scroller-recentlyAdded')
+
+    Object.defineProperty(scroller, 'scrollWidth', {
+      configurable: true,
+      value: 2000,
+    })
+    Object.defineProperty(scroller, 'clientWidth', {
+      configurable: true,
+      value: 500,
+    })
+    Object.defineProperty(scroller, 'scrollLeft', {
+      configurable: true,
+      value: 100,
+    })
+    scroller.scrollBy = vi.fn()
+
+    fireEvent.scroll(scroller)
+
+    fireEvent.click(screen.getByTestId('scroll-next-recentlyAdded'))
+    expect(scroller.scrollBy.mock.calls[0][0].behavior).toBe('auto')
+  })
+
   it('honors reduced motion on the snap scroller', () => {
     Object.defineProperty(window, 'matchMedia', {
       configurable: true,

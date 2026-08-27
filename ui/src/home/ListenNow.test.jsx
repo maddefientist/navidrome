@@ -1,5 +1,5 @@
 import React from 'react'
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { ThemeProvider, createTheme } from '@material-ui/core/styles'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -221,6 +221,32 @@ describe('ListenNow', () => {
     )
     expect(screen.queryByText(/history unavailable/i)).not.toBeInTheDocument()
     expect(mockDispatch).not.toHaveBeenCalled()
+  })
+
+  it('uses a shrink-safe fluid page shell bounded at 1680px', async () => {
+    renderPage()
+    await waitFor(() => expect(mockGetList).toHaveBeenCalled())
+
+    const page = screen.getByTestId('listen-now-page')
+    const style = getComputedStyle(page)
+
+    expect(style.maxWidth).toBe('1680px')
+    expect(parseInt(style.minWidth, 10) || 0).toBe(0)
+    expect(style.width).toBe('100%')
+  })
+
+  it('renders a neutral hero mosaic fallback instead of a broken image glyph', async () => {
+    renderPage()
+    const newest = await screen.findByText('Newest Album')
+    expect(newest).toBeInTheDocument()
+
+    const mosaicImages = screen
+      .getByTestId('listen-now-hero')
+      .querySelectorAll('img')
+    expect(mosaicImages.length).toBeGreaterThan(0)
+    fireEvent.error(mosaicImages[0])
+
+    expect(screen.getAllByTestId('hero-tile-fallback').length).toBe(1)
   })
 
   it('shows a session-expired page alert when rail requests return 401', async () => {

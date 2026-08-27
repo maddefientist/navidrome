@@ -1,10 +1,22 @@
-import React from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Button, Typography, useMediaQuery } from '@material-ui/core'
-import { makeStyles } from '@material-ui/core/styles'
+import {
+  Button,
+  IconButton,
+  Typography,
+  useMediaQuery,
+} from '@material-ui/core'
+import { makeStyles, alpha } from '@material-ui/core/styles'
 import { useTranslate } from 'react-admin'
+import ChevronLeftIcon from '@material-ui/icons/ChevronLeft'
+import ChevronRightIcon from '@material-ui/icons/ChevronRight'
 import clsx from 'clsx'
 import { MediaCard } from './MediaCard'
+
+const CARD_WIDTH_XS = 156
+const CARD_WIDTH_SM = 176
+const CARD_WIDTH_MD = 196
+const CARD_WIDTH_LG = 208
 
 const useStyles = makeStyles(
   (theme) => ({
@@ -48,6 +60,10 @@ const useStyles = makeStyles(
         outlineOffset: 3,
       },
     },
+    scrollerWrap: {
+      position: 'relative',
+      minWidth: 0,
+    },
     scroller: {
       display: 'flex',
       gap: theme.spacing(1.5),
@@ -55,24 +71,109 @@ const useStyles = makeStyles(
       paddingBottom: theme.spacing(1),
       scrollSnapType: 'x proximity',
       scrollPaddingInline: theme.spacing(0.5),
+      scrollBehavior: 'smooth',
+      overscrollBehaviorInline: 'contain',
       WebkitOverflowScrolling: 'touch',
-      scrollbarWidth: 'thin',
+      // Hide native scrollbar tracks cross-browser while keeping
+      // keyboard/touch/trackpad scroll behavior intact.
+      scrollbarWidth: 'none',
+      msOverflowStyle: 'none',
+      '&::-webkit-scrollbar': {
+        display: 'none',
+      },
+      '&:focus-visible': {
+        outline: `2px solid ${theme.palette.primary.main}`,
+        outlineOffset: 3,
+      },
       '@media (prefers-reduced-motion: reduce)': {
         scrollBehavior: 'auto',
       },
     },
     snap: {
-      flex: '0 0 156px',
+      flex: `0 0 ${CARD_WIDTH_XS}px`,
+      width: CARD_WIDTH_XS,
+      minWidth: 0,
+      maxWidth: CARD_WIDTH_XS,
       scrollSnapAlign: 'start',
       [theme.breakpoints.up('sm')]: {
-        flexBasis: 176,
+        flexBasis: CARD_WIDTH_SM,
+        width: CARD_WIDTH_SM,
+        maxWidth: CARD_WIDTH_SM,
       },
       [theme.breakpoints.up('md')]: {
-        flexBasis: 196,
+        flexBasis: CARD_WIDTH_MD,
+        width: CARD_WIDTH_MD,
+        maxWidth: CARD_WIDTH_MD,
+      },
+      [theme.breakpoints.up('lg')]: {
+        flexBasis: CARD_WIDTH_LG,
+        width: CARD_WIDTH_LG,
+        maxWidth: CARD_WIDTH_LG,
       },
     },
+    edgeFade: {
+      pointerEvents: 'none',
+      position: 'absolute',
+      top: 0,
+      bottom: theme.spacing(1),
+      width: theme.spacing(4),
+      opacity: 0,
+      transition: theme.transitions.create('opacity', {
+        duration: theme.transitions.duration.shorter,
+      }),
+      '@media (prefers-reduced-motion: reduce)': {
+        transition: 'none',
+      },
+      [theme.breakpoints.down('sm')]: {
+        display: 'none',
+      },
+    },
+    edgeFadeVisible: {
+      opacity: 1,
+    },
+    edgeFadeStart: {
+      left: 0,
+      background: `linear-gradient(to right, ${theme.palette.background.default} 0%, ${alpha(
+        theme.palette.background.default,
+        0,
+      )} 100%)`,
+    },
+    edgeFadeEnd: {
+      right: 0,
+      background: `linear-gradient(to left, ${theme.palette.background.default} 0%, ${alpha(
+        theme.palette.background.default,
+        0,
+      )} 100%)`,
+    },
+    chevron: {
+      display: 'none',
+      [theme.breakpoints.up('md')]: {
+        display: 'flex',
+      },
+      position: 'absolute',
+      top: `calc(50% - ${theme.spacing(2)}px - 24px)`,
+      width: 48,
+      height: 48,
+      zIndex: 1,
+      backgroundColor: theme.palette.background.paper,
+      boxShadow: theme.shadows[2],
+      '&:hover': {
+        backgroundColor: theme.palette.action.hover,
+      },
+      '&:focus-visible': {
+        outline: `2px solid ${theme.palette.primary.main}`,
+        outlineOffset: 2,
+      },
+    },
+    chevronPrev: {
+      left: theme.spacing(0.5),
+    },
+    chevronNext: {
+      right: theme.spacing(0.5),
+    },
     status: {
-      minHeight: 156,
+      maxWidth: CARD_WIDTH_XS * 3,
+      minHeight: CARD_WIDTH_XS,
       display: 'flex',
       flexDirection: 'column',
       justifyContent: 'center',
@@ -80,10 +181,7 @@ const useStyles = makeStyles(
       gap: theme.spacing(1.5),
       padding: theme.spacing(2),
       borderRadius: theme.spacing(1.5),
-      backgroundColor:
-        theme.palette.type === 'dark'
-          ? 'rgba(255, 255, 255, 0.04)'
-          : theme.palette.action.hover,
+      backgroundColor: alpha(theme.palette.text.primary, 0.04),
     },
     skeletonCard: {
       display: 'flex',
@@ -91,10 +189,7 @@ const useStyles = makeStyles(
       width: '100%',
       minWidth: 0,
       borderRadius: theme.spacing(1.5),
-      backgroundColor:
-        theme.palette.type === 'dark'
-          ? 'rgba(255, 255, 255, 0.04)'
-          : theme.palette.background.paper,
+      backgroundColor: alpha(theme.palette.text.primary, 0.04),
       padding: theme.spacing(1.25),
     },
     skeletonCover: {
@@ -146,6 +241,54 @@ export const HomeRail = ({
   const reduceMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
   const headingId = `home-rail-${id}-title`
   const playableItems = items.filter((item) => item?.id && !item.missing)
+  const scrollerRef = useRef(null)
+  const [canScrollPrev, setCanScrollPrev] = useState(false)
+  const [canScrollNext, setCanScrollNext] = useState(false)
+
+  const measureOverflow = useCallback(() => {
+    const el = scrollerRef.current
+    if (!el) return
+    const maxScrollLeft = el.scrollWidth - el.clientWidth
+    setCanScrollPrev(el.scrollLeft > 1)
+    setCanScrollNext(el.scrollLeft < maxScrollLeft - 1)
+  }, [])
+
+  useEffect(() => {
+    measureOverflow()
+    const el = scrollerRef.current
+    if (!el) return undefined
+
+    el.addEventListener('scroll', measureOverflow, { passive: true })
+    window.addEventListener('resize', measureOverflow)
+
+    let resizeObserver
+    if (typeof ResizeObserver === 'function') {
+      resizeObserver = new ResizeObserver(measureOverflow)
+      resizeObserver.observe(el)
+    }
+
+    return () => {
+      el.removeEventListener('scroll', measureOverflow)
+      window.removeEventListener('resize', measureOverflow)
+      resizeObserver?.disconnect()
+    }
+  }, [measureOverflow, playableItems.length, loading])
+
+  const scrollByCards = useCallback(
+    (direction) => {
+      const el = scrollerRef.current
+      if (!el) return
+      const card = el.querySelector(`.${classes.snap}`)
+      const cardWidth = card?.getBoundingClientRect().width || CARD_WIDTH_MD
+      const gap = 12
+      const distance = (cardWidth + gap) * 3 * direction
+      el.scrollBy({
+        left: distance,
+        behavior: reduceMotion ? 'auto' : 'smooth',
+      })
+    },
+    [classes.snap, reduceMotion],
+  )
 
   return (
     <section
@@ -233,15 +376,57 @@ export const HomeRail = ({
         </div>
       )}
       {!loading && !error && playableItems.length > 0 && (
-        <div
-          className={classes.scroller}
-          data-testid={`home-rail-scroller-${id}`}
-        >
-          {playableItems.map((record) => (
-            <div className={classes.snap} key={record.id}>
-              <MediaCard record={record} />
-            </div>
-          ))}
+        <div className={classes.scrollerWrap}>
+          <div
+            className={clsx(classes.edgeFade, classes.edgeFadeStart, {
+              [classes.edgeFadeVisible]: canScrollPrev,
+            })}
+            aria-hidden="true"
+          />
+          <div
+            className={clsx(classes.edgeFade, classes.edgeFadeEnd, {
+              [classes.edgeFadeVisible]: canScrollNext,
+            })}
+            aria-hidden="true"
+          />
+          {canScrollPrev && (
+            <IconButton
+              className={clsx(classes.chevron, classes.chevronPrev)}
+              onClick={() => scrollByCards(-1)}
+              aria-label={translate('listenNow.scrollPrev', {
+                _: 'Scroll left',
+              })}
+              data-testid={`scroll-prev-${id}`}
+            >
+              <ChevronLeftIcon />
+            </IconButton>
+          )}
+          {canScrollNext && (
+            <IconButton
+              className={clsx(classes.chevron, classes.chevronNext)}
+              onClick={() => scrollByCards(1)}
+              aria-label={translate('listenNow.scrollNext', {
+                _: 'Scroll right',
+              })}
+              data-testid={`scroll-next-${id}`}
+            >
+              <ChevronRightIcon />
+            </IconButton>
+          )}
+          <div
+            className={classes.scroller}
+            data-testid={`home-rail-scroller-${id}`}
+            role="group"
+            aria-label={title}
+            tabIndex={0}
+            ref={scrollerRef}
+          >
+            {playableItems.map((record) => (
+              <div className={classes.snap} key={record.id}>
+                <MediaCard record={record} />
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </section>

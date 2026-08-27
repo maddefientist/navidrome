@@ -85,7 +85,8 @@ const useStyles = makeStyles(
       flexDirection: 'column',
       gap: theme.spacing(4),
       width: '100%',
-      maxWidth: 1280,
+      minWidth: 0,
+      maxWidth: 1680,
       margin: '0 auto',
       padding: theme.spacing(2, 2, 6),
       [theme.breakpoints.up('sm')]: {
@@ -93,6 +94,12 @@ const useStyles = makeStyles(
       },
       [theme.breakpoints.up('md')]: {
         padding: theme.spacing(4, 4, 10),
+      },
+      [theme.breakpoints.up('lg')]: {
+        padding: theme.spacing(5, '5vw', 12),
+      },
+      [theme.breakpoints.up('xl')]: {
+        padding: theme.spacing(6, '6vw', 14),
       },
     },
     pageError: {

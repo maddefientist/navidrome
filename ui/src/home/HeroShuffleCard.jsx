@@ -1,8 +1,9 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { Box, Typography } from '@material-ui/core'
 import { makeStyles } from '@material-ui/core/styles'
 import { alpha } from '@material-ui/core/styles/colorManipulator'
 import { useTranslate } from 'react-admin'
+import MusicNoteIcon from '@material-ui/icons/MusicNote'
 import { ShuffleAllButton } from '../common'
 import subsonic from '../subsonic'
 
@@ -108,6 +109,17 @@ const useStyles = makeStyles(
     tileEmpty: {
       backgroundColor: alpha(theme.palette.primary.main, 0.16),
     },
+    tileFallback: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      color: theme.palette.text.secondary,
+      backgroundColor: alpha(theme.palette.primary.main, 0.16),
+    },
+    tileFallbackIcon: {
+      fontSize: '1.75rem',
+      opacity: 0.5,
+    },
   }),
   { name: 'NDListenNow' },
 )
@@ -116,6 +128,7 @@ export const HeroShuffleCard = ({ filters = {}, albums = [] }) => {
   const classes = useStyles()
   const translate = useTranslate()
   const mosaic = albums.filter((album) => album?.id).slice(0, 4)
+  const [failedIds, setFailedIds] = useState(() => new Set())
 
   return (
     <section
@@ -160,12 +173,26 @@ export const HeroShuffleCard = ({ filters = {}, albums = [] }) => {
               />
             )
           }
+          if (failedIds.has(album.id)) {
+            return (
+              <div
+                key={album.id}
+                className={`${classes.tile} ${classes.tileFallback}`}
+                data-testid="hero-tile-fallback"
+              >
+                <MusicNoteIcon className={classes.tileFallbackIcon} />
+              </div>
+            )
+          }
           return (
             <img
               key={album.id}
               className={classes.tile}
               src={subsonic.getCoverArtUrl(album, 200, true) || undefined}
               alt=""
+              onError={() =>
+                setFailedIds((current) => new Set(current).add(album.id))
+              }
             />
           )
         })}

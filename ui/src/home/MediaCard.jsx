@@ -1,8 +1,9 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Typography } from '@material-ui/core'
-import { makeStyles } from '@material-ui/core/styles'
+import { makeStyles, alpha } from '@material-ui/core/styles'
 import { useTranslate } from 'react-admin'
+import MusicNoteIcon from '@material-ui/icons/MusicNote'
 import clsx from 'clsx'
 import subsonic from '../subsonic'
 import { OverflowTooltip, PlayButton } from '../common'
@@ -13,13 +14,14 @@ const useStyles = makeStyles(
       display: 'flex',
       flexDirection: 'column',
       width: '100%',
+      maxWidth: '100%',
       minWidth: 0,
       textDecoration: 'none',
       color: 'inherit',
       borderRadius: theme.spacing(1.5),
       backgroundColor:
         theme.palette.type === 'dark'
-          ? 'rgba(255, 255, 255, 0.04)'
+          ? alpha(theme.palette.text.primary, 0.04)
           : theme.palette.background.paper,
       padding: theme.spacing(1.25),
       transition: theme.transitions.create(['background-color', 'transform'], {
@@ -28,7 +30,7 @@ const useStyles = makeStyles(
       '&:hover, &:focus-within': {
         backgroundColor:
           theme.palette.type === 'dark'
-            ? 'rgba(255, 255, 255, 0.09)'
+            ? alpha(theme.palette.text.primary, 0.09)
             : theme.palette.action.hover,
       },
       '&:focus-visible': {
@@ -55,6 +57,19 @@ const useStyles = makeStyles(
       width: '100%',
       height: '100%',
       objectFit: 'cover',
+    },
+    coverFallback: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      width: '100%',
+      height: '100%',
+      color: theme.palette.text.secondary,
+      backgroundColor: theme.palette.action.hover,
+    },
+    coverFallbackIcon: {
+      fontSize: '2.5rem',
+      opacity: 0.5,
     },
     overlay: {
       position: 'absolute',
@@ -99,20 +114,26 @@ const useStyles = makeStyles(
     },
     title: {
       marginTop: theme.spacing(1.25),
+      maxWidth: '100%',
+      minWidth: 0,
       fontWeight: 650,
       fontSize: '0.95rem',
       lineHeight: 1.35,
       overflow: 'hidden',
       whiteSpace: 'nowrap',
       textOverflow: 'ellipsis',
+      wordBreak: 'break-all',
     },
     subtitle: {
+      maxWidth: '100%',
+      minWidth: 0,
       color: theme.palette.text.secondary,
       fontSize: '0.8rem',
       lineHeight: 1.35,
       overflow: 'hidden',
       whiteSpace: 'nowrap',
       textOverflow: 'ellipsis',
+      wordBreak: 'break-all',
     },
     missing: {
       opacity: 0.38,
@@ -124,12 +145,19 @@ const useStyles = makeStyles(
 export const MediaCard = ({ record }) => {
   const classes = useStyles()
   const translate = useTranslate()
+  const [coverFailed, setCoverFailed] = useState(false)
+
+  useEffect(() => {
+    setCoverFailed(false)
+  }, [record?.id])
+
   if (!record?.id) {
     return null
   }
 
   const coverSrc = subsonic.getCoverArtUrl(record, 300, true)
   const subtitle = record.albumArtist || record.artist || ''
+  const showFallback = coverFailed || !coverSrc
 
   return (
     <Link
@@ -141,12 +169,22 @@ export const MediaCard = ({ record }) => {
       })}
     >
       <div className={classes.coverWrap}>
-        <img
-          className={classes.cover}
-          src={coverSrc || undefined}
-          alt=""
-          loading="lazy"
-        />
+        {showFallback ? (
+          <div
+            className={classes.coverFallback}
+            data-testid="media-cover-fallback"
+          >
+            <MusicNoteIcon className={classes.coverFallbackIcon} />
+          </div>
+        ) : (
+          <img
+            className={classes.cover}
+            src={coverSrc}
+            alt=""
+            loading="lazy"
+            onError={() => setCoverFailed(true)}
+          />
+        )}
         {!record.missing && (
           <div className={classes.overlay}>
             <PlayButton record={record} size="small" className={classes.play} />
